@@ -1,6 +1,4 @@
-# BOOK: Materials
-
-> __TODO:__ Create a new repo from this template, create the requisite editions/x.x branch, add the book team with Write access, and update references in this readme as appropriate.
+# Apple Foundation Models: Materials
 
 
 This repo contains all the downloadable materials and projects associated with the **[BOOK](https://www.kodeco.com/books)** from [Kodeco](https://www.kodeco.com).
@@ -15,5 +13,5 @@ We’ve set up an official forum for the book at [https://forums.kodeco.com/c/bo
 
 | Branch                                                                            | Edition | Release Date |
 | --------------------------------------------------------------------------------- |:-------:|:------------:|
-| [editions/1.0](https://github.com/kodecocodes/TODO-materials/tree/editions/1.0) | 1.0     | YYYY-MM-DD   |
+| [editions/1.0](https://github.com/kodecocodes/aam-materials/tree/editions/1.0) | 1.0     | YYYY-MM-DD   |
 
