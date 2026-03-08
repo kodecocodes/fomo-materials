@@ -31,11 +31,32 @@
 /// THE SOFTWARE.
 
 import SwiftUI
+import FoundationModels
 
 struct ChatView: View {
   @State private var promptText = ""
   @State private var messages: [Message] = []
   @FocusState private var isTextFieldFocused: Bool
+  @State private var session = LanguageModelSession()
+  @State private var confirmClear: Bool = false
+
+  @ToolbarContentBuilder private var appToolbar: some ToolbarContent {
+    ToolbarSpacer(.flexible, placement: .bottomBar)
+    ToolbarItem(placement: .bottomBar) {
+      Button("Clear", systemImage: "xmark.circle.fill") {
+        confirmClear = true
+      }
+      .tint(.red)
+      .confirmationDialog(
+        "Are you sure you want to delete the chat history?",
+        isPresented: $confirmClear
+      ) {
+        Button("Delete Chat History", role: .destructive) {
+          resetChatHistory()
+        }
+      }
+    }
+  }
 
   var body: some View {
     NavigationView {
@@ -56,6 +77,10 @@ struct ChatView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
+            if session.isResponding {
+              TypingIndicator()
+                .transition(.scale)
+            }
           }
           .onChange(of: messages.count) { _, _ in
             withAnimation(.easeInOut(duration: 0.3)) {
@@ -74,14 +99,14 @@ struct ChatView: View {
           isTextFieldFocused: $isTextFieldFocused,
           sendAction: sendPrompt
         )
+        .disabled(session.isResponding)
       }
       .navigationTitle("Foundation Explorer")
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        appToolbar
+      }
     }
-  }
-
-  private func resetChatHistory() async {
-    messages = []
   }
 
   private func addMessage(_ message: String, type: MessageType, animate: Bool = true) {
@@ -102,14 +127,28 @@ struct ChatView: View {
   }
 
   private func sendPrompt() async {
+    // 1
     guard !promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
-    // Append prompt to messages
+    // 2
     addMessage(promptText, type: .prompt)
 
-    // Clear prompt
-    addMessage(promptText, type: .fullResponse)
-    promptText = ""
+    do {
+      // 4
+      let modelResponse = try await session.respond(to: promptText)
+      promptText = ""
+      // 5
+      addMessage(modelResponse.content, type: .fullResponse)
+    } catch {
+      // 6
+      let errorResponse = "An error occurred while processing your message. \(error.localizedDescription)"
+      addMessage(errorResponse, type: .error)
+    }
+  }
+
+  private func resetChatHistory() {
+    messages = []
+    session = LanguageModelSession()
   }
 }
 
