@@ -38,23 +38,29 @@ struct MessageBubble: View {
   var bubbleColor: Color {
     switch message.type {
     case .prompt:
-      return Color.blue
-      
+      return .blue
+
     case .fullResponse:
-      return Color.gray.mix(with: .white, by: 0.4)
+      return .gray.mix(with: .white, by: 0.4)
+
+    case .error:
+      return .red
     }
   }
-  
+
   var textColor: Color {
     switch message.type {
     case .prompt:
-      return Color.white
-      
+      return .white
+
     case .fullResponse:
-      return Color.primary
+      return .primary
+
+    case .error:
+      return .white
     }
   }
-    
+
   var body: some View {
     HStack {
       if message.type == .prompt {

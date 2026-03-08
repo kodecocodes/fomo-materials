@@ -35,6 +35,7 @@ import SwiftUI
 enum MessageType {
   case prompt
   case fullResponse
+  case error
 }
 
 struct Message: Identifiable, Equatable {
