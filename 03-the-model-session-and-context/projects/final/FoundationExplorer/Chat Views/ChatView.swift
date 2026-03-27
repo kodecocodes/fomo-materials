@@ -130,6 +130,12 @@ struct ChatView: View {
       .sheet(isPresented: $showSettings) {
         ConfigurationView(settings: $promptSettings)
       }
+      .onChange(of: promptSettings.instructions) {
+        Task {
+          resetChatHistory()
+          await updatedContextWindowUsed()
+        }
+      }
     }
   }
 
@@ -206,7 +212,11 @@ struct ChatView: View {
 
   private func resetChatHistory() {
     messages = []
-    session = LanguageModelSession()
+    if let instructions = promptSettings.instructions {
+      session = LanguageModelSession(instructions: instructions)
+    } else {
+      session = LanguageModelSession()
+    }
   }
   
   private func updatedContextWindowUsed() async {
