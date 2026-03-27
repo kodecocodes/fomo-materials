@@ -41,9 +41,21 @@ struct ChatView: View {
   @State private var confirmClear: Bool = false
   private var contextWindow = SystemLanguageModel.default.contextSize
   @State private var contextWindowSize: Int?
+  @State private var promptSettings =
+  PromptSettings(
+    instructions: nil,
+    temperature: nil,
+    sampling: SamplingOptions(type: .system, threshold: 0.33, top: 10)
+  )
+  @State private var showSettings = false
 
   @ToolbarContentBuilder private var appToolbar: some ToolbarContent {
     ToolbarSpacer(.flexible, placement: .bottomBar)
+    ToolbarItem(placement: .bottomBar) {
+      Button("Settings", systemImage: "gear") {
+        showSettings = true
+      }
+    }
     ToolbarItem(placement: .bottomBar) {
       Button("Clear", systemImage: "xmark.circle.fill") {
         confirmClear = true
@@ -115,6 +127,9 @@ struct ChatView: View {
       .toolbar {
         appToolbar
       }
+      .sheet(isPresented: $showSettings) {
+        ConfigurationView(settings: $promptSettings)
+      }
     }
   }
 
@@ -154,19 +169,14 @@ struct ChatView: View {
     let stream = session.streamResponse(to: promptText)
     promptText = ""
 
-    // 1
     do {
-      // 2
       for try await partialResponse in stream {
-        // 3
         if messages.last?.type != .partialResponse {
-          // 4
           addMessage(
             partialResponse.content,
             type: .partialResponse
           )
         } else {
-          // 5
           messages[messages.count - 1].text = partialResponse.content
         }
       }
@@ -189,7 +199,6 @@ struct ChatView: View {
       )
     }
     catch {
-      // 6
       addMessage(error.localizedDescription, type: .error)
     }
     await updatedContextWindowUsed()
@@ -200,14 +209,11 @@ struct ChatView: View {
     session = LanguageModelSession()
   }
   
-  // 1
   private func updatedContextWindowUsed() async {
-    // 2
     guard #available(iOS 26.4, *) else {
       contextWindowSize = nil
       return
     }
-    // 3
     contextWindowSize = try? await SystemLanguageModel.default.tokenCount(for: session.transcript)
   }
   
