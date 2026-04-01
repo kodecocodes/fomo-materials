@@ -59,5 +59,5 @@ struct SamplingOptions {
 struct PromptSettings {
   var instructions: String?
   var temperature: Double?
-  var sampling: SamplingOptions = .init(type: .system, threshold: 0, top: 10 ,seed: nil)
+  var sampling: SamplingOptions = .init(type: .system, threshold: 0, top: 10, seed: nil)
 }
