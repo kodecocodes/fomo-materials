@@ -37,7 +37,9 @@ struct ChatView: View {
   @State private var promptText = ""
   @State private var messages: [Message] = []
   @FocusState private var isTextFieldFocused: Bool
-  @State private var session = LanguageModelSession()
+  @State private var session = LanguageModelSession(
+    model: SystemLanguageModel(guardrails: .permissiveContentTransformations)
+  )
   @State private var confirmClear: Bool = false
   private var contextWindow = SystemLanguageModel.default.contextSize
   @State private var contextWindowSize: Int?
@@ -172,7 +174,33 @@ struct ChatView: View {
 
     addMessage(promptText, type: .prompt)
 
-    let stream = session.streamResponse(to: promptText)
+    // 1
+    let samplingOptions = promptSettings.sampling
+    // 2
+    var sampling: GenerationOptions.SamplingMode?
+    // 3
+    switch samplingOptions.type {
+    // 4
+    case .system:
+      sampling = nil
+    // 5
+    case .greedy:
+      sampling = GenerationOptions.SamplingMode.greedy
+    // 6
+    case .top:
+      sampling = GenerationOptions.SamplingMode.random(
+        top: samplingOptions.top,
+        seed: samplingOptions.seed
+      )
+    // 7
+    case .threshold:
+      sampling = GenerationOptions.SamplingMode.random(
+        probabilityThreshold: samplingOptions.threshold,
+        seed: samplingOptions.seed
+      )
+    }
+    let options = GenerationOptions(sampling: sampling, temperature: promptSettings.temperature)
+    let stream = session.streamResponse(to: promptText, options: options)
     promptText = ""
 
     do {
@@ -212,10 +240,12 @@ struct ChatView: View {
 
   private func resetChatHistory() {
     messages = []
+
+    let permissiveModel = SystemLanguageModel(guardrails: .permissiveContentTransformations)
     if let instructions = promptSettings.instructions {
-      session = LanguageModelSession(instructions: instructions)
+      session = LanguageModelSession(model: permissiveModel, instructions: instructions)
     } else {
-      session = LanguageModelSession()
+      session = LanguageModelSession(model: permissiveModel)
     }
   }
   
