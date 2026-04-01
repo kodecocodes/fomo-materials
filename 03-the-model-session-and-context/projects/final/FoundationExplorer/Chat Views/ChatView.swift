@@ -37,9 +37,7 @@ struct ChatView: View {
   @State private var promptText = ""
   @State private var messages: [Message] = []
   @FocusState private var isTextFieldFocused: Bool
-  @State private var session = LanguageModelSession(
-    model: SystemLanguageModel(guardrails: .permissiveContentTransformations)
-  )
+  @State private var session = LanguageModelSession()
   @State private var confirmClear: Bool = false
   private var contextWindow = SystemLanguageModel.default.contextSize
   @State private var contextWindowSize: Int?
@@ -174,25 +172,24 @@ struct ChatView: View {
 
     addMessage(promptText, type: .prompt)
 
-    // 1
     let samplingOptions = promptSettings.sampling
-    // 2
     var sampling: GenerationOptions.SamplingMode?
-    // 3
+
+    // 1
     switch samplingOptions.type {
-    // 4
+    // 2
     case .system:
       sampling = nil
-    // 5
+    // 3
     case .greedy:
       sampling = GenerationOptions.SamplingMode.greedy
-    // 6
+    // 4
     case .top:
       sampling = GenerationOptions.SamplingMode.random(
         top: samplingOptions.top,
         seed: samplingOptions.seed
       )
-    // 7
+    // 5
     case .threshold:
       sampling = GenerationOptions.SamplingMode.random(
         probabilityThreshold: samplingOptions.threshold,
@@ -241,11 +238,10 @@ struct ChatView: View {
   private func resetChatHistory() {
     messages = []
 
-    let permissiveModel = SystemLanguageModel(guardrails: .permissiveContentTransformations)
     if let instructions = promptSettings.instructions {
-      session = LanguageModelSession(model: permissiveModel, instructions: instructions)
+      session = LanguageModelSession(instructions: instructions)
     } else {
-      session = LanguageModelSession(model: permissiveModel)
+      session = LanguageModelSession()
     }
   }
   
