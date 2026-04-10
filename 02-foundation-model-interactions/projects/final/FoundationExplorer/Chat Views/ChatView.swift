@@ -172,7 +172,9 @@ struct ChatView: View {
       }
 
       let lastIndex = messages.count - 1
-      messages[lastIndex].type = .fullResponse
+      withAnimation(.easeInOut) {
+        messages[lastIndex].type = .fullResponse
+      }
       messages[lastIndex].timestamp = Date.now
       messages[lastIndex].tokens = await tokenCount(for: messages[lastIndex].text)
     }
@@ -203,16 +205,18 @@ struct ChatView: View {
   // 1
   private func updatedContextWindowUsed() async {
     // 2
-    guard #available(iOS 26.4, *) else {
+    guard #available(iOS 26.4, macOS 26.4, *) else {
       contextWindowSize = nil
       return
     }
     // 3
-    contextWindowSize = try? await SystemLanguageModel.default.tokenCount(for: session.transcript)
+    contextWindowSize = try? await SystemLanguageModel.default.tokenCount(
+      for: session.transcript
+    )
   }
   
   private func tokenCount(for text: String) async -> Int? {
-    guard #available(iOS 26.4, *) else { return nil }
+    guard #available(iOS 26.4, macOS 26.4, *) else { return nil }
     return try? await SystemLanguageModel.default.tokenCount(for: Prompt(text))
   }
 }
