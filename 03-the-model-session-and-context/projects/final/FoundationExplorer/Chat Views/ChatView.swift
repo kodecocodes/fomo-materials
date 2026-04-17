@@ -196,7 +196,10 @@ struct ChatView: View {
         seed: samplingOptions.seed
       )
     }
-    let options = GenerationOptions(sampling: sampling, temperature: promptSettings.temperature)
+    let options = GenerationOptions(
+      sampling: sampling,
+      temperature: promptSettings.temperature
+    )
     let stream = session.streamResponse(to: promptText, options: options)
     promptText = ""
 
