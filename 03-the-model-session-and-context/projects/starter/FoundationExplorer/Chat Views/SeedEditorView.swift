@@ -12,6 +12,19 @@ struct SeedEditorView: View {
           TextField("", text: $input)
             .keyboardType(.numberPad)
             .textFieldStyle(.roundedBorder)
+            .overlay(alignment: .trailing) {
+              if !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Button {
+                  seed = nil
+                  input = ""
+                } label: {
+                  Image(systemName: "x.circle.fill")
+                    .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 8)
+              }
+            }
           if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Text("nil")
               .font(.callout.weight(.semibold))
@@ -26,13 +39,10 @@ struct SeedEditorView: View {
               .padding(.leading, 6)
           }
         }
+        .frame(maxWidth: .infinity)
       }
       HStack(spacing: 20) {
         Spacer()
-        Button("Set To Nil") {
-          seed = nil
-          input = ""
-        }
         Button("Random Seed") {
           let value = UInt64.random(in: UInt64.min...UInt64.max)
           seed = value
