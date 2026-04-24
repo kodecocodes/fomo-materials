@@ -137,42 +137,37 @@ struct ChatView: View {
     }
   }
 
-  private func addMessage(_ message: String, type: MessageType, animate: Bool = true) {
-    Task {
-      var tokens: Int?
+  private func resetChatHistory() {
+    messages = []
 
-      if type == .prompt || type == .fullResponse {
-        tokens = await tokenCount(for: message)
-      } else {
-        tokens = nil
-      }
-
-      let newMessage = Message(
-        id: UUID(),
-        text: message,
-        type: type,
-        timestamp: Date(),
-        tokens: tokens
-      )
-
-      if animate {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-          messages.append(newMessage)
-        }
-      } else {
-        messages.append(newMessage)
-      }
+    if let instructions = promptSettings.instructions {
+      session = LanguageModelSession(instructions: instructions)
+    } else {
+      session = LanguageModelSession()
     }
   }
 
+  private func updatedContextWindowUsed() async {
+    guard #available(iOS 26.4, *) else {
+      contextWindowSize = nil
+      return
+    }
+    contextWindowSize = try? await SystemLanguageModel.default.tokenCount(for: session.transcript)
+  }
+
+  private func tokenCount(for text: String) async -> Int? {
+    guard #available(iOS 26.4, *) else { return nil }
+    return try? await SystemLanguageModel.default.tokenCount(for: Prompt(text))
+  }
+}
+
+extension ChatView {
   private func sendPrompt() async {
     guard !promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
     addMessage(promptText, type: .prompt)
-
     let samplingOptions = promptSettings.sampling
     var sampling: GenerationOptions.SamplingMode?
-
     switch samplingOptions.type {
     case .system:
       sampling = nil
@@ -195,7 +190,6 @@ struct ChatView: View {
     )
     let stream = session.streamResponse(to: promptText, options: options)
     promptText = ""
-
     do {
       for try await partialResponse in stream {
         if messages.last?.type != .partialResponse {
@@ -207,7 +201,6 @@ struct ChatView: View {
           messages[messages.count - 1].text = partialResponse.content
         }
       }
-
       let lastIndex = messages.count - 1
       messages[lastIndex].type = .fullResponse
       messages[lastIndex].timestamp = Date.now
@@ -230,27 +223,29 @@ struct ChatView: View {
     await updatedContextWindowUsed()
   }
 
-  private func resetChatHistory() {
-    messages = []
-
-    if let instructions = promptSettings.instructions {
-      session = LanguageModelSession(instructions: instructions)
-    } else {
-      session = LanguageModelSession()
+  private func addMessage(_ message: String, type: MessageType, animate: Bool = true) {
+    Task {
+      var tokens: Int?
+      if type == .prompt || type == .fullResponse {
+        tokens = await tokenCount(for: message)
+      } else {
+        tokens = nil
+      }
+      let newMessage = Message(
+        id: UUID(),
+        text: message,
+        type: type,
+        timestamp: Date(),
+        tokens: tokens
+      )
+      if animate {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+          messages.append(newMessage)
+        }
+      } else {
+        messages.append(newMessage)
+      }
     }
-  }
-
-  private func updatedContextWindowUsed() async {
-    guard #available(iOS 26.4, *) else {
-      contextWindowSize = nil
-      return
-    }
-    contextWindowSize = try? await SystemLanguageModel.default.tokenCount(for: session.transcript)
-  }
-
-  private func tokenCount(for text: String) async -> Int? {
-    guard #available(iOS 26.4, *) else { return nil }
-    return try? await SystemLanguageModel.default.tokenCount(for: Prompt(text))
   }
 }
 
