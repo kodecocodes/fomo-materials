@@ -33,7 +33,8 @@
 import SwiftUI
 
 struct CompactionIndicatorView: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityReduceMotion)
+  private var reduceMotion
 
   var body: some View {
     HStack {
@@ -80,4 +81,3 @@ struct CompactionIndicatorView: View {
   CompactionIndicatorView()
     .padding()
 }
-
