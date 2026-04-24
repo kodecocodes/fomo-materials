@@ -35,12 +35,12 @@ import FoundationModels
 
 struct MessageBubble: View {
   let message: Message
-  
+
   var bubbleColor: Color {
     switch message.type {
     case .prompt:
       return .blue
-      
+
     case .fullResponse:
       return .gray.mix(with: .white, by: 0.4)
 
@@ -51,12 +51,12 @@ struct MessageBubble: View {
       return Color.gray.mix(with: .white, by: 0.8)
     }
   }
-  
+
   var textColor: Color {
     switch message.type {
     case .prompt:
       return .white
-      
+
     case .fullResponse:
       return .primary
 
@@ -67,7 +67,7 @@ struct MessageBubble: View {
       return Color.primary
     }
   }
-  
+
   var body: some View {
     HStack {
       if message.type == .prompt {

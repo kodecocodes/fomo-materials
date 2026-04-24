@@ -117,4 +117,3 @@ struct MessageInputView: View {
     print("Message \(messageText) sent.")
   }
 }
-

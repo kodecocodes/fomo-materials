@@ -33,11 +33,12 @@
 import SwiftUI
 
 struct ConfigurationView: View {
-  @Environment(\.dismiss) var dismiss
+  @Environment(\.dismiss)
+    var dismiss
   @Binding var settings: PromptSettings
 
-  @State private var thresholdError: String? = nil
-  @State private var topError: String? = nil
+  @State private var thresholdError: String?
+  @State private var topError: String?
 
   // Derived bindings to bridge optionals / numbers to text controls
   private var instructionText: Binding<String> {
@@ -59,8 +60,8 @@ struct ConfigurationView: View {
       get: { String(format: "%.3f", settings.sampling.threshold) },
       set: { newText in
         let trimmed = newText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let v = Double(trimmed), (0.0...1.0).contains(v) {
-          settings.sampling.threshold = v
+        if let val = Double(trimmed), (0.0...1.0).contains(val) {
+          settings.sampling.threshold = val
           thresholdError = nil
         } else {
           thresholdError = "Enter a number between 0.0 and 1.0"
@@ -74,8 +75,8 @@ struct ConfigurationView: View {
       get: { String(settings.sampling.top) },
       set: { newText in
         let trimmed = newText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let v = Int(trimmed) {
-          settings.sampling.top = v
+        if let val = Int(trimmed) {
+          settings.sampling.top = val
           topError = nil
         } else {
           topError = "Please enter a valid integer"
@@ -184,4 +185,3 @@ struct ConfigurationView: View {
   )
   ConfigurationView(settings: $settings)
 }
-

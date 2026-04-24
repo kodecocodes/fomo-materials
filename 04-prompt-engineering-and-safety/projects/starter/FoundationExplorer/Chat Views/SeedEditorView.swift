@@ -66,7 +66,7 @@ struct SeedEditorView: View {
 }
 
 #Preview {
-  @Previewable @State var seed1: UInt64? = nil
+  @Previewable @State var seed1: UInt64?
   @Previewable @State var seed2: UInt64? = 1234567890
 
   VStack(alignment: .leading) {
