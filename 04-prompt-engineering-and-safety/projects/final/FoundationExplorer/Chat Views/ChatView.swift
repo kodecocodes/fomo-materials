@@ -48,9 +48,17 @@ struct ChatView: View {
     sampling: SamplingOptions(type: .system, threshold: 0.33, top: 10)
   )
   @State private var showSettings = false
+  @State private var isCompactingContext = false
 
   @ToolbarContentBuilder private var appToolbar: some ToolbarContent {
     ToolbarSpacer(.flexible, placement: .bottomBar)
+    ToolbarItem(placement: .bottomBar) {
+      Button("Compact", systemImage: "sparkles.rectangle.stack") {
+        Task {
+          await summarizeChat()
+        }
+      }
+    }
     ToolbarItem(placement: .bottomBar) {
       Button("Settings", systemImage: "gear") {
         showSettings = true
@@ -65,7 +73,7 @@ struct ChatView: View {
         "Are you sure you want to delete the chat history?",
         isPresented: $confirmClear
       ) {
-        Button("Delete Chat History", role: .destructive) {
+        Button("Delete Chat History", role: .destructive) { 
           resetChatHistory()
         }
       }
@@ -122,6 +130,15 @@ struct ChatView: View {
             .font(.footnote)
         }
       }
+      .overlay {
+        if isCompactingContext {
+          VStack(alignment: .center) {
+            CompactionIndicatorView()
+          }
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(.ultraThinMaterial)
+        }
+      }
       .navigationTitle("Foundation Explorer")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -175,21 +192,16 @@ struct ChatView: View {
     let samplingOptions = promptSettings.sampling
     var sampling: GenerationOptions.SamplingMode?
 
-    // 1
     switch samplingOptions.type {
-    // 2
     case .system:
       sampling = nil
-    // 3
     case .greedy:
       sampling = GenerationOptions.SamplingMode.greedy
-    // 4
     case .top:
       sampling = GenerationOptions.SamplingMode.random(
         top: samplingOptions.top,
         seed: samplingOptions.seed
       )
-    // 5
     case .threshold:
       sampling = GenerationOptions.SamplingMode.random(
         probabilityThreshold: samplingOptions.threshold,
@@ -225,10 +237,7 @@ struct ChatView: View {
         type: .error
       )
     } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
-      addMessage(
-        "Context Windows Length of \(contextWindow) tokens has been exceeded.",
-        type: .error
-      )
+      await summarizeChat()
     } catch {
       addMessage(error.localizedDescription, type: .error)
     }
@@ -257,8 +266,127 @@ struct ChatView: View {
     guard #available(iOS 26.4, *) else { return nil }
     return try? await SystemLanguageModel.default.tokenCount(for: Prompt(text))
   }
-}
 
+  private func summarizeChat() async {
+    Task {
+      isCompactingContext = true
+
+      let entriesToKeep = session.transcript
+        .filter {
+          if case .response = $0 {
+            return true
+          }
+          return false
+        }
+
+      let textToSummarize = entriesToKeep.map {
+        $0.description
+      }
+        .joined(separator: "\n")
+
+      let summaryInstructions = """
+      You are given a conversation transcript.
+
+      Your job is to extract and compress it into memory.
+
+      You are NOT an assistant responding to the conversation.
+
+      You MUST NOT answer any user requests.
+
+      STEP 1: Identify all user requests in the transcript.
+      STEP 2: For each request, extract a short summary of the assistant's response.
+
+      Do not skip any requests. Include earlier and later ones.
+      """
+
+      let summarySession = LanguageModelSession(instructions: summaryInstructions)
+      let summarizedText = try? await summarySession.respond(to: textToSummarize)
+
+      messages = []
+
+      if let summary = summarizedText?.content {
+        useSummary(summary)
+      } else {
+        trimSession(entriesToKeep)
+      }
+      await updatedContextWindowUsed()
+      isCompactingContext = false
+    }
+  }
+
+  func useSummary(_ summary: String) {
+    // 1
+    var entries: [Transcript.Entry] = []
+
+    // 2
+    if let instructions = promptSettings.instructions {
+      entries.append(
+        // 3
+        .instructions(
+          .init(
+            // 4
+            segments: [
+              // 5
+              .text(
+                .init(content: instructions)
+              )
+            ],
+            // 6
+            toolDefinitions: []
+          )
+        )
+      )
+    }
+
+    entries.append(
+      .prompt(
+        .init(
+          segments: [
+            .text(
+              .init(content: summary)
+            )
+          ]
+        )
+      )
+    )
+
+    let newTranscript = Transcript(entries: entries)
+    session = LanguageModelSession(transcript: newTranscript)
+    addMessage(summary, type: .summary)
+  }
+
+  func trimSession(_ entries: [Transcript.Entry]) {
+    // 1
+    var entries: [Transcript.Entry] = []
+
+    if let instruction = promptSettings.instructions {
+      entries.append(
+        .instructions(
+          .init(
+            segments: [
+              .text(
+                .init(content: instruction)
+              )
+            ],
+            toolDefinitions: []
+          )
+        )
+      )
+    }
+
+    // 2
+    let lastEntries = entries.dropFirst(entries.count / 3)
+    // 3
+    entries.append(contentsOf: lastEntries)
+    // 4
+    let newTranscript = Transcript(entries: lastEntries)
+    // 5
+    session = LanguageModelSession(transcript: newTranscript)
+    for entry in lastEntries {
+      addMessage(entry.description, type: .summary)
+    }
+  }
+}
 
 // Preview
 struct ChatView_Previews: PreviewProvider {
