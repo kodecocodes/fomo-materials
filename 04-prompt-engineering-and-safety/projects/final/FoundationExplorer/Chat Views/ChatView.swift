@@ -191,51 +191,57 @@ struct ChatView: View {
     return try? await SystemLanguageModel.default.tokenCount(for: Prompt(text))
   }
 
+  @MainActor
   private func summarizeChat() async {
-    Task {
-      isCompactingContext = true
-
-      let entriesToKeep = session.transcript
-        .filter {
-          if case .response = $0 {
-            return true
-          }
-          return false
-        }
-
-      let textToSummarize = entriesToKeep.map {
-        $0.description
-      }
-        .joined(separator: "\n")
-
-      let summaryInstructions = """
-      You are given a conversation transcript.
-
-      Your job is to extract and compress it into memory.
-
-      You are NOT an assistant responding to the conversation.
-
-      You MUST NOT answer any user requests.
-
-      STEP 1: Identify all user requests in the transcript.
-      STEP 2: For each request, extract a short summary of the assistant's response.
-
-      Do not skip any requests. Include earlier and later ones.
-      """
-
-      let summarySession = LanguageModelSession(instructions: summaryInstructions)
-      let summarizedText = try? await summarySession.respond(to: textToSummarize)
-
-      messages = []
-
-      if let summary = summarizedText?.content {
-        useSummary(summary)
-      } else {
-        trimSession(entriesToKeep)
-      }
-      await updatedContextWindowUsed()
+    isCompactingContext = true
+    defer {
       isCompactingContext = false
     }
+    
+    let entriesToKeep = session.transcript
+      .filter {
+        if case .response = $0 {
+          return true
+        }
+        return false
+      }
+    
+    let textToSummarize = entriesToKeep.map {
+      $0.description
+    }
+      .joined(separator: "\n")
+    
+    let summaryInstructions = """
+      You are given a conversation transcript.
+      
+      Your job is to extract and compress it into memory.
+      
+      You are NOT an assistant responding to the conversation.
+      
+      You MUST NOT answer any user requests.
+      
+      STEP 1: Identify all user requests in the transcript.
+      STEP 2: For each request, extract a short summary of the assistant's response.
+      
+      Do not skip any requests. Include earlier and later ones.
+      """
+    
+    let summarySession = LanguageModelSession(instructions: summaryInstructions)
+    let summarizedText = try? await summarySession.respond(to: textToSummarize)
+    
+    // 1
+    messages = []
+    
+    // 2
+    if let summary = summarizedText?.content {
+      // 3
+      useSummary(summary)
+    } else {
+      // 4
+      trimSession(entriesToKeep)
+    }
+    // 5
+    await updatedContextWindowUsed()
   }
 
   func useSummary(_ summary: String) {
@@ -281,10 +287,10 @@ struct ChatView: View {
 
   func trimSession(_ entries: [Transcript.Entry]) {
     // 1
-    var entries: [Transcript.Entry] = []
+    var summaryEntries: [Transcript.Entry] = []
 
     if let instruction = promptSettings.instructions {
-      entries.append(
+      summaryEntries.append(
         .instructions(
           .init(
             segments: [
@@ -299,11 +305,11 @@ struct ChatView: View {
     }
 
     // 2
-    let lastEntries = entries.dropFirst(entries.count / 3)
+    let lastEntries = Array(entries.dropFirst(entries.count / 3))
     // 3
-    entries.append(contentsOf: lastEntries)
+    summaryEntries.append(contentsOf: lastEntries)
     // 4
-    let newTranscript = Transcript(entries: lastEntries)
+    let newTranscript = Transcript(entries: summaryEntries)
     // 5
     session = LanguageModelSession(transcript: newTranscript)
     for entry in lastEntries {
