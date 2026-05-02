@@ -47,157 +47,115 @@ struct FoodMenuView: View {
   @State private var specialIngredients = [String]()
   @State var special: MenuItem?
   
+  struct OptionsView {
+    var body: some View {
+      Text("Hi")
+    }
+  }
+  
   var body: some View {
     NavigationStack {
-      VStack(alignment: .leading, spacing: 0) {
-        Group {
-          Button {
-            withAnimation(.easeInOut) {
-              showControls.toggle()
-            }
-          } label: {
-            Label(
-              showControls ? "Hide Options" : "Show Options",
-              systemImage: showControls ? "chevron.up" : "chevron.down"
-            )
-            .font(.subheadline)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-          }
-          .buttonStyle(.plain)
-          .foregroundStyle(.secondary)
-          .padding(.horizontal, 12)
-          .padding(.vertical, 8)
-          
-          if showControls {
-            VStack(alignment: .leading) {
-              HStack {
-                Text("Meal")
-                Picker("Meal", selection: $selectedMeal) {
-                  ForEach(mealtimes, id: \.self) {
-                    Text($0).tag($0)
-                  }
-                }
-                .pickerStyle(.segmented)
+      ScrollView {
+        VStack(alignment: .leading, spacing: 0) {
+          Group {
+            Button {
+              withAnimation(.easeInOut) {
+                showControls.toggle()
               }
-              HStack {
-                Text("Cuisine Type")
-                if let cuisineList = cuisineList {
-                  Picker("Cuisine", selection: $cuisine) {
-                    Text("--Select Cuisine--").tag("N/A")
-                    ForEach(cuisineList, id: \.self) {
-                      Text($0).tag($0)
-                    }
-                  }
-                  .frame(maxWidth: .infinity)
-                }
-              }
-              Text("Ingredients")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-              if !ingredientList.isEmpty {
-                MultiSelectView(
-                  options: $ingredientList,
-                  selections: $selectedIngredients
-                )
-              } else {
-                Text("Select a cuisine first.")
-                  .font(.subheadline)
-                  .foregroundStyle(.secondary)
-              }
-              Divider()
-              Text("Special Ingredients")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-              if !ingredientList.isEmpty {
-                MultiSelectView(
-                  options: $ingredientList,
-                  selections: $specialIngredients,
-                  maxSelect: 3
-                )
-              } else {
-                Text("Select a cuisine first.")
-                  .font(.subheadline)
-                  .foregroundStyle(.secondary)
-              }
-              Button("Generate \(selectedMeal) Menu") {
-                withAnimation {
-                  showControls = false
-                }
-                Task {
-                  await generateLunchMenu()
-                  await generateMenuSpecial()
-                }
-              }
-              .frame(maxWidth: .infinity)
-              .buttonStyle(.borderedProminent)
-              .disabled(
-                selectedIngredients.isEmpty || cuisine == "N/A"
+            } label: {
+              Label(
+                showControls ? "Hide Options" : "Show Options",
+                systemImage: showControls ? "chevron.up" : "chevron.down"
               )
+              .font(.subheadline)
+              .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding()
-            .background(
-              .gray.mix(with: .white, by: 0.8),
-              in: RoundedRectangle(
-                cornerRadius: 20,
-                style: .continuous
-              )
-            )
-            .transition(
-              .move(edge: .top)
-              .combined(with: .opacity)
-            )
-            .task {
-              generateCuisineList()
-            }
-            .onChange(of: cuisine) { _ , _ in
-              Task {
-                ingredientList = []
-                selectedIngredients = []
-                await ingredientList = generateIngredients()
-              }
-            }
-          }
-        }
-        
-        if isGenerating {
-          Label("Generating Menu", systemImage: "sparkles")
-            .font(.title3)
+            .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .symbolEffect(
-              .pulse,
-              isActive: isGenerating
-            )
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.top, 40)
-        }
-        if let special = special {
-          VStack {
-            Text("Today's Special")
-              .font(.title2)
-            MenuItemView(
-              menuItem: special.asPartiallyGenerated()
-            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            
+            if showControls {
+              Group {
+                MenuOptionsView(
+                  mealtimes: mealtimes,
+                  selectedMeal: $selectedMeal,
+                  cuisineList: cuisineList,
+                  cuisine: $cuisine,
+                  ingredientList: ingredientList,
+                  selectedIngredients: $selectedIngredients,
+                  specialIngredients: $specialIngredients
+                )
+                Button("Generate \(selectedMeal) Menu") {
+                  withAnimation {
+                    showControls = false
+                  }
+                  Task {
+                    await generateLunchMenu()
+                    await generateMenuSpecial()
+                  }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top)
+                .buttonStyle(.borderedProminent)
+                .disabled(
+                  selectedIngredients.isEmpty || cuisine == "N/A"
+                )
+              }
+              .transition(
+                .move(edge: .top)
+                .combined(with: .opacity)
+              )
+            }
           }
-          .featuredCard()
-          .padding(.bottom, 8)
-        }
-        if let menu = menu {
-          if let type = menu.type {
-            Text("\(type.rawValue.capitalized) Menu")
-              .font(.headline.bold())
+          
+          if isGenerating {
+            Label("Generating Menu", systemImage: "sparkles")
+              .font(.title3)
+              .foregroundStyle(.secondary)
+              .symbolEffect(
+                .pulse,
+                isActive: isGenerating
+              )
+              .frame(maxWidth: .infinity, alignment: .center)
+              .padding(.top, 40)
           }
-          if let menuitems = menu.menu {
-            ScrollView {
+          if let special = special {
+            VStack {
+              Text("Today's Special")
+                .font(.title2)
+              MenuItemView(
+                menuItem: special.asPartiallyGenerated()
+              )
+            }
+            .featuredCard()
+            .padding(.bottom, 8)
+          }
+          if let menu = menu {
+            if let type = menu.type {
+              Text("\(type.rawValue.capitalized) Menu")
+                .font(.headline.bold())
+            }
+            if let menuitems = menu.menu {
               ForEach(menuitems, id: \.name) { item in
                 MenuItemView(menuItem: item)
                 Divider()
               }
             }
           }
+          Spacer()
         }
-        Spacer()
+      }
+      .task {
+        generateCuisineList()
+      }
+      .onChange(of: cuisine) { _ , _ in
+        Task {
+          ingredientList = []
+          selectedIngredients = []
+          specialIngredients = []
+          await ingredientList = generateIngredients()
+        }
       }
       .navigationTitle("Menu Maker")
       .navigationBarTitleDisplayMode(.inline)
@@ -221,6 +179,7 @@ struct FoodMenuView: View {
     // 2
     let ingredientPrompt = """
       Give me a list of ingredients used in \(cuisine) for \(selectedMeal).
+      Do not repeat ingredients. Do not provide examples of ingredients.
       """
     let session = LanguageModelSession()
     
@@ -276,6 +235,11 @@ struct FoodMenuView: View {
   }
   
   func generateMenuSpecial() async {
+    isGenerating = true
+    defer {
+      isGenerating = false
+    }
+
     // 1
     let specialMealSchema = DynamicGenerationSchema(
       name: "specialmenuitem",

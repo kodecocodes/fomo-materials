@@ -33,7 +33,7 @@
 import SwiftUI
 
 struct MultiSelectView: View {
-  @Binding var options: [String]
+  @State var options: [String]
   @Binding var selections: [String]
   var maxSelect: Int?
 
@@ -86,7 +86,7 @@ struct MultiSelectView: View {
   @Previewable @State var selected: [String] = []
   
   MultiSelectView(
-    options: $list, selections: $selected
+    options: list, selections: $selected
   )
   Text("Selected Items:")
     .padding(.top, 20)
@@ -106,7 +106,7 @@ struct MultiSelectView: View {
   @Previewable @State var selected: [String] = []
   
   MultiSelectView(
-    options: $list, selections: $selected, maxSelect: 3
+    options: list, selections: $selected, maxSelect: 3
   )
   Text("Selected Items:")
     .padding(.top, 20)

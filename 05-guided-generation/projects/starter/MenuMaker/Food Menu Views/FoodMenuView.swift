@@ -46,101 +46,68 @@ struct FoodMenuView: View {
   
   var body: some View {
     NavigationStack {
-      VStack(alignment: .leading, spacing: 0) {
-        Group {
-          Button {
-            withAnimation(.easeInOut) {
-              showControls.toggle()
-            }
-          } label: {
-            Label(
-              showControls ? "Hide Options" : "Show Options",
-              systemImage: showControls ? "chevron.up" : "chevron.down"
-            )
-            .font(.subheadline)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-          }
-          .buttonStyle(.plain)
-          .foregroundStyle(.secondary)
-          .padding(.horizontal, 12)
-          .padding(.vertical, 8)
-          
-          if showControls {
-            VStack(alignment: .leading) {
-              HStack {
-                Text("Meal")
-                Picker("Meal", selection: $selectedMeal) {
-                  ForEach(mealtimes, id: \.self) {
-                    Text($0).tag($0)
-                  }
-                }
-                .pickerStyle(.segmented)
+      ScrollView {
+        VStack(alignment: .leading, spacing: 0) {
+          Group {
+            Button {
+              withAnimation(.easeInOut) {
+                showControls.toggle()
               }
-              HStack {
-                Text("Cuisine Type")
-                if let cuisineList = cuisineList {
-                  Picker("Cuisine", selection: $cuisine) {
-                    Text("--Select Cuisine--").tag("N/A")
-                    ForEach(cuisineList, id: \.self) {
-                      Text($0).tag($0)
-                    }
-                  }
-                  .frame(maxWidth: .infinity)
-                }
-              }
-              Text("Ingredients")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-              if !ingredientList.isEmpty {
-                MultiSelectView(
-                  options: $ingredientList,
-                  selections: $selectedIngredients
-                )
-              } else {
-                Text("Select a cuisine first.")
-                  .font(.subheadline)
-                  .foregroundStyle(.secondary)
-              }
-              Button("Generate \(selectedMeal) Menu") {
-                // Do Menu Generation
-              }
-              .frame(maxWidth: .infinity)
-              .buttonStyle(.borderedProminent)
-              .disabled(
-                selectedIngredients.isEmpty || cuisine == "N/A"
+            } label: {
+              Label(
+                showControls ? "Hide Options" : "Show Options",
+                systemImage: showControls ? "chevron.up" : "chevron.down"
               )
+              .font(.subheadline)
+              .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding()
-            .background(
-              .gray.mix(with: .white, by: 0.8),
-              in: RoundedRectangle(
-                cornerRadius: 20,
-                style: .continuous
-              )
-            )
-            .transition(
-              .move(edge: .top)
-              .combined(with: .opacity)
-            )
-            .task {
-              generateCuisineList()
-            }
-          }
-        }
-
-        if isGenerating {
-          Label("Generating Menu", systemImage: "sparkles")
-            .font(.title3)
+            .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .symbolEffect(
-              .pulse,
-              isActive: isGenerating
-            )
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.top, 40)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            if showControls {
+              Group {
+                MenuOptionsView(
+                  mealtimes: mealtimes,
+                  selectedMeal: $selectedMeal,
+                  cuisineList: cuisineList,
+                  cuisine: $cuisine,
+                  ingredientList: ingredientList,
+                  selectedIngredients: $selectedIngredients
+                )
+                Divider()
+                Button("Generate \(selectedMeal) Menu") {
+                  // Do Menu Generation
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top)
+                .buttonStyle(.borderedProminent)
+                .disabled(
+                  selectedIngredients.isEmpty || cuisine == "N/A"
+                )
+              }
+              .transition(
+                .move(edge: .top)
+                .combined(with: .opacity)
+              )
+            }
+          }
+          if isGenerating {
+            Label("Generating Menu", systemImage: "sparkles")
+              .font(.title3)
+              .foregroundStyle(.secondary)
+              .symbolEffect(
+                .pulse,
+                isActive: isGenerating
+              )
+              .frame(maxWidth: .infinity, alignment: .center)
+              .padding(.top, 40)
+          }
+          Spacer()
         }
-        Spacer()
+      }
+      .task {
+        generateCuisineList()
       }
       .navigationTitle("Menu Maker")
       .navigationBarTitleDisplayMode(.inline)

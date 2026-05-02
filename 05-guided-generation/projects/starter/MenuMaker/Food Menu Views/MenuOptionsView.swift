@@ -32,87 +32,76 @@
 
 import SwiftUI
 
-struct MultiSelectView: View {
-  @State var options: [String]
-  @Binding var selections: [String]
-  var maxSelect: Int?
-
+struct MenuOptionsView: View {
+  var mealtimes: [String]
+  @Binding var selectedMeal: String
+  var cuisineList: [String]?
+  @Binding var cuisine: String
+  var ingredientList: [String]
+  @Binding var selectedIngredients: [String]
+  
   var body: some View {
-    FlowLayout(spacing: 8) {
-      ForEach(options, id: \.self) { option in
-        Button {
-          withAnimation {
-            if selections.contains(option) {
-              selections.removeAll { $0 == option}
-            } else {
-              if let max = maxSelect {
-                if selections.count >= max {
-                  return
-                }
-              }
-              selections.append(option)
-            }
+    VStack(alignment: .leading) {
+      HStack {
+        Text("Meal")
+        Picker("Meal", selection: $selectedMeal) {
+          ForEach(mealtimes, id: \.self) {
+            Text($0).tag($0)
           }
-        } label: {
-          HStack {
-            if selections.contains(option) {
-              Image(systemName: "checkmark")
-                .foregroundStyle(.green)
-            } else {
-              EmptyView()
-            }
-            Text(option)
-          }
-          .transition(.opacity)
         }
-        .buttonStyle(.glass)
+        .pickerStyle(.segmented)
+      }
+      HStack {
+        Text("Cuisine Type")
+        if let cuisineList = cuisineList {
+          Picker("Cuisine", selection: $cuisine) {
+            Text("--Select Cuisine--").tag("N/A")
+            ForEach(cuisineList, id: \.self) {
+              Text($0).tag($0)
+            }
+          }
+          .frame(maxWidth: .infinity)
+        }
+      }
+      Text("Ingredients")
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .textCase(.uppercase)
+      if !ingredientList.isEmpty {
+        MultiSelectView(
+          options: ingredientList,
+          selections: $selectedIngredients
+        )
       }
     }
-    if let max = maxSelect {
-      Text("Maximum: \(max)")
-        .font(
-          max == selections.count ? .headline.bold() : .callout
-        )
-    }
+    .padding()
+    .background(
+      .gray.mix(with: .white, by: 0.8),
+      in: RoundedRectangle(
+        cornerRadius: 20,
+        style: .continuous
+      )
+    )
   }
 }
 
-#Preview("Standard") {
-  @Previewable @State var list =
-  [
-    "salmon", "pork", "beef", "onions", "olives",
-   "tomatoes", "eggs"
+#Preview {
+  @Previewable @State var selectedMeal = "Lunch"
+  @Previewable @State var cuisine = "N/A"
+  @Previewable @State var selectedIngredients: [String] = []
+  let mealtimes = ["Breakfast", "Lunch", "Dinner", "Dessert"]
+  let cuisineList = [
+    "American", "Italian", "French", "Asian", "Mediterranean",
+    "Indian", "Caribbean",
   ]
-  @Previewable @State var selected: [String] = []
+  let ingredientList = ["onion", "salmon", "chicken", "olives", "tomatoes", "garlic", "beef"]
   
-  MultiSelectView(
-    options: list, selections: $selected
+  MenuOptionsView(
+    mealtimes: mealtimes,
+    selectedMeal: $selectedMeal,
+    cuisineList: cuisineList,
+    cuisine: $cuisine,
+    ingredientList: ingredientList,
+    selectedIngredients: $selectedIngredients
   )
-  Text("Selected Items:")
-    .padding(.top, 20)
-  if selected.isEmpty {
-    Text("None")
-  } else {
-    Text(selected.joined(separator: ", "))
-  }
-}
-
-#Preview("Limited") {
-  @Previewable @State var selected: [String] = []
-  let list =
-  [
-    "salmon", "pork", "beef", "onions", "olives",
-   "tomatoes", "eggs"
-  ]
-  
-  MultiSelectView(
-    options: list, selections: $selected, maxSelect: 3
-  )
-  Text("Selected Items:")
-    .padding(.top, 20)
-  if selected.isEmpty {
-    Text("None")
-  } else {
-    Text(selected.joined(separator: ", "))
-  }
 }
