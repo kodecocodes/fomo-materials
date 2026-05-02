@@ -31,8 +31,10 @@
 /// THE SOFTWARE.
 
 import SwiftUI
+import FoundationModels
 
 struct MenuOptionsView: View {
+  var session = LanguageModelSession()
   var mealtimes: [String]
   @Binding var selectedMeal: String
   var cuisineList: [String]?

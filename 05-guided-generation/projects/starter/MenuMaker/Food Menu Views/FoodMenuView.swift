@@ -34,6 +34,7 @@ import SwiftUI
 import FoundationModels
 
 struct FoodMenuView: View {
+  @State private var session = LanguageModelSession()
   @State private var showTranscript = false
   @State private var cuisineList: [String]?
   @State private var cuisine = "N/A"
@@ -65,6 +66,7 @@ struct FoodMenuView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            
             if showControls {
               Group {
                 MenuOptionsView(
@@ -111,8 +113,25 @@ struct FoodMenuView: View {
       }
       .navigationTitle("Menu Maker")
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        appToolbar
+      }
     }
     .padding()
+  }
+  
+  @ToolbarContentBuilder private var appToolbar: some ToolbarContent {
+    ToolbarItem(placement: .topBarTrailing) {
+      Button {
+        showTranscript = true
+      } label: {
+        Image(systemName: "text.page")
+          .foregroundStyle(.primary)
+      }
+      .sheet(isPresented: $showTranscript) {
+        TranscriptView(session: $session)
+      }
+    }
   }
 
   func generateCuisineList() {

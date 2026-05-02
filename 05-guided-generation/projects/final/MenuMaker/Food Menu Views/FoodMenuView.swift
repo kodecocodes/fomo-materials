@@ -34,6 +34,7 @@ import SwiftUI
 import FoundationModels
 
 struct FoodMenuView: View {
+  @State private var session = LanguageModelSession()
   @State private var showTranscript = false
   @State private var cuisineList: [String]?
   @State private var cuisine = "N/A"
@@ -46,12 +47,6 @@ struct FoodMenuView: View {
   @State private var menu: RestaurantMenu.PartiallyGenerated?
   @State private var specialIngredients = [String]()
   @State var special: MenuItem?
-  
-  struct OptionsView {
-    var body: some View {
-      Text("Hi")
-    }
-  }
   
   var body: some View {
     NavigationStack {
@@ -86,11 +81,13 @@ struct FoodMenuView: View {
                   selectedIngredients: $selectedIngredients,
                   specialIngredients: $specialIngredients
                 )
+                Divider()
                 Button("Generate \(selectedMeal) Menu") {
                   withAnimation {
                     showControls = false
                   }
                   Task {
+                    createSession()
                     await generateLunchMenu()
                     await generateMenuSpecial()
                   }
@@ -159,8 +156,25 @@ struct FoodMenuView: View {
       }
       .navigationTitle("Menu Maker")
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        appToolbar
+      }
     }
     .padding()
+  }
+  
+  @ToolbarContentBuilder private var appToolbar: some ToolbarContent {
+    ToolbarItem(placement: .topBarTrailing) {
+      Button {
+        showTranscript = true
+      } label: {
+        Image(systemName: "text.page")
+          .foregroundStyle(.primary)
+      }
+      .sheet(isPresented: $showTranscript) {
+        TranscriptView(session: $session)
+      }
+    }
   }
   
   func generateCuisineList() {
@@ -194,21 +208,22 @@ struct FoodMenuView: View {
     }
   }
   
-  // 1
-  func generateLunchMenu() async {
-    isGenerating = true
-    defer {
-      isGenerating = false
-    }
-
-    // 2
+  func createSession() {
     let instructions = """
       You are generating a simple, plausible restaurant menu for a restaurant in a game.
       The menu must match the given cuisine and meal type.
       Use at least ONE ingredient from the provided ingredient list but you may include additional ingredients beyond the provided list.
       Avoid repeating the same primary ingredient across all dishes.
     """
-    let session = LanguageModelSession(instructions: instructions)
+    session = LanguageModelSession(instructions: instructions)
+  }
+  
+  // 1
+  func generateLunchMenu() async {
+    isGenerating = true
+    defer {
+      isGenerating = false
+    }
 
     // 3
     let prompt = """
@@ -275,10 +290,17 @@ struct FoodMenuView: View {
     // 2
     guard let schema = schema else { return }
     // 3
-    let session = LanguageModelSession(instructions: "You are a helpful model assisting with generating realistic restaurant menus.")
-    let specialPrompt = "Produce a lunch special menu item that is focused on the specified ingredient."
+    let specialPrompt = """
+      Create a special dish for \(selectedMeal) at a \(cuisine)) restaurant.
+
+      Requirements:
+      - Each dish must include at least ONE of the available ingredients.
+      - The dishes should be appropriate for the cuisine and meal type.
+      - This is the place to try more unique and authentic meals.
+      - Prices may be a bit more expensive than expected at a casual restaurant in USD.
+    """
     let response = try? await session.respond(to: specialPrompt, schema: schema)
-    
+
     let name = try? response?.content.value(String.self, forProperty: "name")
     let ingredients = try? response?.content.value(String.self, forProperty: "ingredients")
     let description = try? response?.content.value(String.self, forProperty: "description")

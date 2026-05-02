@@ -47,6 +47,7 @@ struct TranscriptView: View {
     Text("Session Transcript")
       .font(.title)
     ScrollView {
+      Divider()
       ForEach(session.transcript) { entry in
         switch entry {
         case .instructions(let instructions):
