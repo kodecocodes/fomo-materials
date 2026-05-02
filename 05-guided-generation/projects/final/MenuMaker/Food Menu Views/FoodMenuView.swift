@@ -43,7 +43,7 @@ struct FoodMenuView: View {
   @State private var selectedMeal: String = "Lunch"
   @State private var showControls = true
   @State private var isGenerating = false
-  @State var menu: RestaurantMenu?
+  @State var menu: RestaurantMenu.PartiallyGenerated?
   
   var body: some View {
     NavigationStack {
@@ -154,12 +154,16 @@ struct FoodMenuView: View {
             .padding(.top, 40)
         }
         if let menu = menu {
-          ScrollView {
-            Text("\(menu.type.rawValue.capitalized) Menu")
+          if let type = menu.type {
+            Text("\(type.rawValue.capitalized) Menu")
               .font(.headline.bold())
-            ForEach(menu.menu, id: \.name) { item in
-              MenuItemView(menuItem: item)
-              Divider()
+          }
+          if let menuitems = menu.menu {
+            ScrollView {
+              ForEach(menuitems, id: \.name) { item in
+                MenuItemView(menuItem: item)
+                Divider()
+              }
             }
           }
         }
@@ -230,9 +234,15 @@ struct FoodMenuView: View {
       - Prices should feel reasonable for a casual restaurant in USD.
       """
     // 4
-    let response = try? await session.respond(to: prompt, generating: RestaurantMenu.self)
+    let streamedResponse = session.streamResponse(to: prompt, generating: RestaurantMenu.self)
     // 5
-    menu = response?.content
+    do {
+      for try await partialResponse in streamedResponse {
+        menu = partialResponse.content
+      }
+    } catch {
+      print(error.localizedDescription)
+    }
   }
 }
 

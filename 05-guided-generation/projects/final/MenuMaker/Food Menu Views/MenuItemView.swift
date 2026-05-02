@@ -33,26 +33,30 @@
 import SwiftUI
 
 struct MenuItemView: View {
-  var menuItem: MenuItem
+  var menuItem: MenuItem.PartiallyGenerated
   
   var body: some View {
     VStack {
       HStack {
-        Text(menuItem.name)
+        Text(menuItem.name ?? "")
           .font(.headline.bold())
         Spacer()
-        Text(menuItem.cost, format: .currency(code: "USD"))
-          .font(.headline)
+        if let cost = menuItem.cost {
+          Text(cost, format: .currency(code: "USD"))
+            .font(.headline)
+        }
       }
       .font(.title3)
-      Text(menuItem.description)
+      Text(menuItem.description ?? "")
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 15.0)
         .font(.subheadline)
         .foregroundStyle(.secondary)
-      Text(menuItem.ingredients.joined(separator: " • "))
-        .font(.caption)
-        .foregroundStyle(.tertiary)
+      if let ingredients = menuItem.ingredients {
+        Text(ingredients.joined(separator: " • "))
+          .font(.caption)
+          .foregroundStyle(.tertiary)
+      }
     }
     .padding(.vertical, 10)
   }
@@ -66,6 +70,6 @@ struct MenuItemView: View {
     cost: 10.0
   )
   MenuItemView(
-    menuItem: item
+    menuItem: item.asPartiallyGenerated()
   )
 }
