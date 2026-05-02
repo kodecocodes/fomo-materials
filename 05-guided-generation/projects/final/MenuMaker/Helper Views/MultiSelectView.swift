@@ -35,7 +35,8 @@ import SwiftUI
 struct MultiSelectView: View {
   @Binding var options: [String]
   @Binding var selections: [String]
-  
+  var maxSelect: Int?
+
   var body: some View {
     FlowLayout(spacing: 8) {
       ForEach(options, id: \.self) { option in
@@ -44,6 +45,11 @@ struct MultiSelectView: View {
             if selections.contains(option) {
               selections.removeAll { $0 == option}
             } else {
+              if let max = maxSelect {
+                if selections.count >= max {
+                  return
+                }
+              }
               selections.append(option)
             }
           }
@@ -62,10 +68,16 @@ struct MultiSelectView: View {
         .buttonStyle(.glass)
       }
     }
+    if let max = maxSelect {
+      Text("Maximum: \(max)")
+        .font(
+          max == selections.count ? .headline.bold() : .callout
+        )
+    }
   }
 }
 
-#Preview {
+#Preview("Standard") {
   @Previewable @State var list =
   [
     "salmon", "pork", "beef", "onions", "olives",
@@ -75,6 +87,26 @@ struct MultiSelectView: View {
   
   MultiSelectView(
     options: $list, selections: $selected
+  )
+  Text("Selected Items:")
+    .padding(.top, 20)
+  if selected.isEmpty {
+    Text("None")
+  } else {
+    Text(selected.joined(separator: ", "))
+  }
+}
+
+#Preview("Limited") {
+  @Previewable @State var list =
+  [
+    "salmon", "pork", "beef", "onions", "olives",
+   "tomatoes", "eggs"
+  ]
+  @Previewable @State var selected: [String] = []
+  
+  MultiSelectView(
+    options: $list, selections: $selected, maxSelect: 3
   )
   Text("Selected Items:")
     .padding(.top, 20)

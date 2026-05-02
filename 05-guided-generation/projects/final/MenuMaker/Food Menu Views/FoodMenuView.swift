@@ -43,7 +43,9 @@ struct FoodMenuView: View {
   @State private var selectedMeal: String = "Lunch"
   @State private var showControls = true
   @State private var isGenerating = false
-  @State var menu: RestaurantMenu.PartiallyGenerated?
+  @State private var menu: RestaurantMenu.PartiallyGenerated?
+  @State private var specialIngredients = [String]()
+  @State var special: MenuItem?
   
   var body: some View {
     NavigationStack {
@@ -103,12 +105,29 @@ struct FoodMenuView: View {
                   .font(.subheadline)
                   .foregroundStyle(.secondary)
               }
+              Divider()
+              Text("Special Ingredients")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+              if !ingredientList.isEmpty {
+                MultiSelectView(
+                  options: $ingredientList,
+                  selections: $specialIngredients,
+                  maxSelect: 3
+                )
+              } else {
+                Text("Select a cuisine first.")
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+              }
               Button("Generate \(selectedMeal) Menu") {
                 withAnimation {
                   showControls = false
                 }
                 Task {
                   await generateLunchMenu()
+                  await generateMenuSpecial()
                 }
               }
               .frame(maxWidth: .infinity)
@@ -152,6 +171,17 @@ struct FoodMenuView: View {
             )
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.top, 40)
+        }
+        if let special = special {
+          VStack {
+            Text("Today's Special")
+              .font(.title2)
+            MenuItemView(
+              menuItem: special.asPartiallyGenerated()
+            )
+          }
+          .featuredCard()
+          .padding(.bottom, 8)
         }
         if let menu = menu {
           if let type = menu.type {
@@ -243,6 +273,60 @@ struct FoodMenuView: View {
     } catch {
       print(error.localizedDescription)
     }
+  }
+  
+  func generateMenuSpecial() async {
+    // 1
+    let specialMealSchema = DynamicGenerationSchema(
+      name: "specialmenuitem",
+      // 2
+      properties: [
+        // 3
+        DynamicGenerationSchema.Property(
+          name: "ingredients",
+          // 4
+          schema: DynamicGenerationSchema(
+            name: "ingredients",
+            anyOf: specialIngredients
+          )
+        ),
+        // 5
+        DynamicGenerationSchema.Property(
+          name: "name",
+          schema: DynamicGenerationSchema(type: String.self)
+        ),
+        DynamicGenerationSchema.Property(
+          name: "description",
+          schema: DynamicGenerationSchema(type: String.self)
+        ),
+        DynamicGenerationSchema.Property(
+          name: "price",
+          schema: DynamicGenerationSchema(type: Decimal.self)
+        )
+      ]
+    )
+    
+    // 1
+    let schema = try? GenerationSchema(root: specialMealSchema, dependencies: [])
+    // 2
+    guard let schema = schema else { return }
+    // 3
+    let session = LanguageModelSession(instructions: "You are a helpful model assisting with generating realistic restaurant menus.")
+    let specialPrompt = "Produce a lunch special menu item that is focused on the specified ingredient."
+    let response = try? await session.respond(to: specialPrompt, schema: schema)
+    
+    let name = try? response?.content.value(String.self, forProperty: "name")
+    let ingredients = try? response?.content.value(String.self, forProperty: "ingredients")
+    let description = try? response?.content.value(String.self, forProperty: "description")
+    let price = try? response?.content.value(Decimal.self, forProperty: "price")
+    let specialItem = MenuItem(
+      name: name ?? "",
+      description: description ?? "",
+      ingredients: ingredients == nil ? [] : [ingredients!],
+      cost: price ?? 0.0
+    )
+
+    special = specialItem
   }
 }
 
