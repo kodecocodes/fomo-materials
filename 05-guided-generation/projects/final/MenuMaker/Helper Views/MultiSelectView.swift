@@ -1,15 +1,15 @@
 /// Copyright (c) 2026 Kodeco Inc.
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
 /// in the Software without restriction, including without limitation the rights
 /// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 /// copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
 /// distribute, sublicense, create a derivative work, and/or sell copies of the
 /// Software in any work that is designed, intended, or marketed for pedagogical or
@@ -17,7 +17,7 @@
 /// or information technology.  Permission for such use, copying, modification,
 /// merger, publication, distribution, sublicensing, creation of derivative works,
 /// or sale is expressly withheld.
-/// 
+///
 /// This project and source code may use libraries or frameworks that are
 /// released under various Open-Source licenses. Use of those libraries and
 /// frameworks are governed by their own individual licenses.
@@ -30,11 +30,57 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
-import FoundationModels
+import SwiftUI
 
-struct RestaurantMenu {
-  let type: MealType
+struct MultiSelectView: View {
+  @Binding var options: [String]
+  @Binding var selections: [String]
+  
+  var body: some View {
+    FlowLayout(spacing: 8) {
+      ForEach(options, id: \.self) { option in
+        Button {
+          withAnimation {
+            if selections.contains(option) {
+              selections.removeAll { $0 == option}
+            } else {
+              selections.append(option)
+            }
+          }
+        } label: {
+          HStack {
+            if selections.contains(option) {
+              Image(systemName: "checkmark")
+                .foregroundStyle(.green)
+            } else {
+              EmptyView()
+            }
+            Text(option)
+          }
+          .transition(.opacity)
+        }
+        .buttonStyle(.glass)
+      }
+    }
+  }
+}
 
-  let menu: [MenuItem]
+#Preview {
+  @Previewable @State var list =
+  [
+    "salmon", "pork", "beef", "onions", "olives",
+   "tomatoes", "eggs"
+  ]
+  @Previewable @State var selected: [String] = []
+  
+  MultiSelectView(
+    options: $list, selections: $selected
+  )
+  Text("Selected Items:")
+    .padding(.top, 20)
+  if selected.isEmpty {
+    Text("None")
+  } else {
+    Text(selected.joined(separator: ", "))
+  }
 }

@@ -30,11 +30,11 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
+import SwiftUI
 import FoundationModels
 
-struct RestaurantMenu {
-  let type: MealType
-
-  let menu: [MenuItem]
+@Generable(description: "A list of ingredients common in a specific type of cuisine.")
+struct CuisineIngredients {
+  @Guide(description: "An array of individual ingredients specified by their English name.", .count(10...15))
+  let ingredients: [String]
 }

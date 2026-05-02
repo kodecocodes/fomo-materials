@@ -33,8 +33,10 @@
 import Foundation
 import FoundationModels
 
-struct RestaurantMenu {
-  let type: MealType
-
-  let menu: [MenuItem]
+@Generable
+enum MealType: String {
+  case breakfast = "Breakfast"
+  case lunch = "Lunch"
+  case dinner = "Dinner"
+  case dessert = "Dessert"
 }

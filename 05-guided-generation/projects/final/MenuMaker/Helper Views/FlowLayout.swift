@@ -30,11 +30,47 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
-import FoundationModels
+import SwiftUI
 
-struct RestaurantMenu {
-  let type: MealType
+struct FlowLayout: Layout {
+  var spacing: CGFloat = 8
 
-  let menu: [MenuItem]
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+    let rows = makeRows(proposal: proposal, subviews: subviews)
+    let height = rows.reduce(0) { total, row in
+      total + (row.map { $0.sizeThatFits(.unspecified).height }.max() ?? 0)
+    } + CGFloat(max(rows.count - 1, 0)) * spacing
+    return CGSize(width: proposal.width ?? 0, height: height)
+  }
+
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+    let rows = makeRows(proposal: proposal, subviews: subviews)
+    var y = bounds.minY
+    for row in rows {
+      var x = bounds.minX
+      let rowHeight = row.map { $0.sizeThatFits(.unspecified).height }.max() ?? 0
+      for subview in row {
+        let size = subview.sizeThatFits(.unspecified)
+        subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+        x += size.width + spacing
+      }
+      y += rowHeight + spacing
+    }
+  }
+
+  private func makeRows(proposal: ProposedViewSize, subviews: Subviews) -> [[LayoutSubview]] {
+    let maxWidth = proposal.width ?? .infinity
+    var rows: [[LayoutSubview]] = [[]]
+    var rowWidth: CGFloat = 0
+    for subview in subviews {
+      let width = subview.sizeThatFits(.unspecified).width
+      if rowWidth + width > maxWidth, !rows[rows.count - 1].isEmpty {
+        rows.append([])
+        rowWidth = 0
+      }
+      rows[rows.count - 1].append(subview)
+      rowWidth += width + spacing
+    }
+    return rows
+  }
 }

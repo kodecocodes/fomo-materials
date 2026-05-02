@@ -1,4 +1,4 @@
-/// Copyright (c) 2026 Kodeco Inc.
+/// Copyright (c) 2025 Kodeco Inc.
 /// 
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,61 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
+import SwiftUI
 import FoundationModels
 
-struct RestaurantMenu {
-  let type: MealType
+struct TranscriptView: View {
+  @Binding var session: LanguageModelSession
 
-  let menu: [MenuItem]
+  let instructionsColor = Color.green.mix(with: .white, by: 0.5)
+  let promptColor = Color.blue.mix(with: .white, by: 0.5)
+  let responseColor = Color.gray.mix(with: .white, by: 0.5)
+  let toolCallColor = Color.yellow.mix(with: .white, by: 0.5)
+  let toolOutputColor = Color.orange.mix(with: .white, by: 0.5)
+  let defaultColor = Color.gray.mix(with: .white, by: 0.2)
+
+  var body: some View {
+    Text("Session Transcript")
+      .font(.title)
+    ScrollView {
+      ForEach(session.transcript) { entry in
+        switch entry {
+        case .instructions(let instructions):
+          TranscriptEntryView(text: instructions.description, color: instructionsColor)
+        case .prompt(let prompt):
+          TranscriptEntryView(
+            text: prompt.description,
+            color: promptColor
+          )
+        case .response(let response):
+          TranscriptEntryView(
+            text: response.description,
+            color: responseColor
+          )
+        case .toolCalls(let toolCall):
+          TranscriptEntryView(
+            text: toolCall.description,
+            color: toolCallColor
+          )
+        case .toolOutput(let toolOutput):
+          TranscriptEntryView(
+            text: toolOutput.description,
+            color: toolOutputColor
+          )
+        default:
+          TranscriptEntryView(
+            text: entry.description,
+            color: defaultColor
+          )
+        }
+      }
+    }
+  }
+}
+
+#Preview {
+  let session = LanguageModelSession(instructions: "Sample instruction")
+  TranscriptView(
+    session: .constant(session)
+  )
 }

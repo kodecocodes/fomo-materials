@@ -1,4 +1,4 @@
-/// Copyright (c) 2026 Kodeco Inc.
+/// Copyright (c) 2025 Kodeco Inc.
 /// 
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,42 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
-import FoundationModels
+import SwiftUI
 
-struct RestaurantMenu {
-  let type: MealType
+struct MenuItemView: View {
+  var menuItem: MenuItem
+  
+  var body: some View {
+    VStack {
+      HStack {
+        Text(menuItem.name)
+          .font(.headline.bold())
+        Spacer()
+        Text(menuItem.cost, format: .currency(code: "USD"))
+          .font(.headline)
+      }
+      .font(.title3)
+      Text(menuItem.description)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 15.0)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+      Text(menuItem.ingredients.joined(separator: " • "))
+        .font(.caption)
+        .foregroundStyle(.tertiary)
+    }
+    .padding(.vertical, 10)
+  }
+}
 
-  let menu: [MenuItem]
+#Preview {
+  let item = MenuItem(
+    name: "Caesar Salad",
+    description: "Romaine lettuce tossed in Caesar dressing with parmesan cheese and croutons.",
+    ingredients: ["romaine lettuce", "Caesar dressing", "parmesan cheese", "croutons"],
+    cost: 10.0
+  )
+  MenuItemView(
+    menuItem: item
+  )
 }

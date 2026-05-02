@@ -43,6 +43,7 @@ struct FoodMenuView: View {
   @State private var selectedMeal: String = "Lunch"
   @State private var showControls = true
   @State private var isGenerating = false
+  @State var menu: RestaurantMenu?
   
   var body: some View {
     NavigationStack {
@@ -103,7 +104,12 @@ struct FoodMenuView: View {
                   .foregroundStyle(.secondary)
               }
               Button("Generate \(selectedMeal) Menu") {
-                // Do Menu Generation
+                withAnimation {
+                  showControls = false
+                }
+                Task {
+                  await generateLunchMenu()
+                }
               }
               .frame(maxWidth: .infinity)
               .buttonStyle(.borderedProminent)
@@ -126,9 +132,16 @@ struct FoodMenuView: View {
             .task {
               generateCuisineList()
             }
+            .onChange(of: cuisine) { _ , _ in
+              Task {
+                ingredientList = []
+                selectedIngredients = []
+                await ingredientList = generateIngredients()
+              }
+            }
           }
         }
-
+        
         if isGenerating {
           Label("Generating Menu", systemImage: "sparkles")
             .font(.title3)
@@ -140,6 +153,16 @@ struct FoodMenuView: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.top, 40)
         }
+        if let menu = menu {
+          ScrollView {
+            Text("\(menu.type.rawValue.capitalized) Menu")
+              .font(.headline.bold())
+            ForEach(menu.menu, id: \.name) { item in
+              MenuItemView(menuItem: item)
+              Divider()
+            }
+          }
+        }
         Spacer()
       }
       .navigationTitle("Menu Maker")
@@ -147,12 +170,69 @@ struct FoodMenuView: View {
     }
     .padding()
   }
-
+  
   func generateCuisineList() {
     cuisineList = [
       "American", "Italian", "French", "Asian", "Mediterranean",
       "Indian", "Caribbean",
     ]
+  }
+  
+  func generateIngredients() async -> [String] {
+    // 1
+    guard cuisine != "N/A" else { return [] }
+    isGenerating = true
+    defer { isGenerating = false }
+    
+    // 2
+    let ingredientPrompt = """
+      Give me a list of ingredients used in \(cuisine) for \(selectedMeal).
+      """
+    let session = LanguageModelSession()
+    
+    // 3
+    let response = try? await session.respond(to: ingredientPrompt, generating: CuisineIngredients.self)
+    
+    // 4
+    if let response = response {
+      return response.content.ingredients
+    } else {
+      return []
+    }
+  }
+  
+  // 1
+  func generateLunchMenu() async {
+    isGenerating = true
+    defer {
+      isGenerating = false
+    }
+
+    // 2
+    let instructions = """
+      You are generating a simple, plausible restaurant menu for a restaurant in a game.
+      The menu must match the given cuisine and meal type.
+      Use at least ONE ingredient from the provided ingredient list but you may include additional ingredients beyond the provided list.
+      Avoid repeating the same primary ingredient across all dishes.
+    """
+    let session = LanguageModelSession(instructions: instructions)
+
+    // 3
+    let prompt = """
+      Create a menu for \(selectedMeal) at a \(cuisine)) restaurant.
+      Each meal on the menu must include one of the following ingredients: \(selectedIngredients.joined(separator: ", "))
+
+      Requirements:
+      - Each dish must include at least ONE of the available ingredients.
+      - Dishes should be appropriate for the cuisine and meal type.
+      - Keep items simple, recognizable, and realistic (not overly complex or experimental).
+      - Vary the primary ingredients across dishes when possible.
+      - Prices should feel reasonable for a casual restaurant in USD.
+      """
+    // 4
+    let response = try? await session.respond(to: prompt, generating: RestaurantMenu.self)
+    // 5
+    menu = response?.content
   }
 }
 

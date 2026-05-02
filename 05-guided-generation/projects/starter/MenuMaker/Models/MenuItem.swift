@@ -34,17 +34,9 @@
 import Foundation
 import FoundationModels
 
-@Generable(description: "A single dish for a restaurant menu.")
 struct MenuItem {
-  @Guide(description: "Name for this dish.")
   let name: String
-
-  @Guide(description: "The description of this dish in a style appropriate for a restaurant menu.")
   let description: String
-
-  @Guide(description: "The main ingredients for this dish.")
   let ingredients: [String]
-
-  @Guide(description: "A cost fot this dish in US dollars, which should be appropriate for the ingredients", )
   let cost: Decimal
 }

@@ -33,8 +33,10 @@
 import Foundation
 import FoundationModels
 
+@Generable(description: "A menu of offerings for a restaurant for a single meal.")
 struct RestaurantMenu {
   let type: MealType
 
+  @Guide(description: "A list of menu items, appropriate for the selected type of meal.", .count(4...8))
   let menu: [MenuItem]
 }

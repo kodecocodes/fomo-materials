@@ -30,11 +30,20 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import SwiftUI
+import Foundation
 import FoundationModels
 
-@Generable(description: "A list of ingredients common in a specific type of cuisine.")
-struct CusineIngredients {
-  @Guide(description: "An array of individual ingredients.", .count(10...15))
+@Generable(description: "A single dish for a restaurant menu.")
+struct MenuItem {
+  @Guide(description: "Name for this dish.")
+  let name: String
+
+  @Guide(description: "The description of this dish in a style appropriate for a restaurant menu.")
+  let description: String
+
+  @Guide(description: "The ingredients used in this dish.")
   let ingredients: [String]
+
+  @Guide(description: "A cost for this dish in US dollars, which should be appropriate for the ingredients and menu item.", )
+  let cost: Decimal
 }

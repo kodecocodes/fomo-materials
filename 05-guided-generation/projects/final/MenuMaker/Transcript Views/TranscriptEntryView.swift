@@ -1,4 +1,4 @@
-/// Copyright (c) 2026 Kodeco Inc.
+/// Copyright (c) 2025 Kodeco Inc.
 /// 
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,28 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
-import FoundationModels
+import SwiftUI
 
-struct RestaurantMenu {
-  let type: MealType
+struct TranscriptEntryView: View {
+  var text: String
+  var color: Color
 
-  let menu: [MenuItem]
+  var body: some View {
+    Text(text)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
+      .background(
+        RoundedRectangle(cornerRadius: 20)
+          .fill(color)
+          .padding(.horizontal, 4)
+      )
+  }
+}
+
+#Preview {
+  TranscriptEntryView(
+    text: "Sample Text",
+    color: Color.blue.mix(with: .white, by: 0.5)
+  )
 }

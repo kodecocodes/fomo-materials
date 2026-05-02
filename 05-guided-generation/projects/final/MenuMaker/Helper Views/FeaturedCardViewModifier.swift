@@ -1,4 +1,4 @@
-/// Copyright (c) 2025 Kodeco Inc.
+/// Copyright (c) 2026 Kodeco Inc.
 /// 
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
@@ -32,9 +32,25 @@
 
 import SwiftUI
 
-struct Message: Identifiable, Equatable {
-  let id: UUID
-  let text: String
-  let isFromUser: Bool
-  let timestamp: Date
+struct FeaturedCardModifier: ViewModifier {
+  func body(content: Content) -> some View {
+    content
+      .padding(.horizontal, 16)
+      .padding(.vertical, 4)
+      .background(
+        .orange.opacity(0.12),
+        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+          .strokeBorder(.orange.opacity(0.35), lineWidth: 1)
+      )
+      .shadow(color: .orange.opacity(0.15), radius: 6, x: 0, y: 3)
+  }
+}
+
+extension View {
+  func featuredCard() -> some View {
+    modifier(FeaturedCardModifier())
+  }
 }
