@@ -40,7 +40,7 @@ struct ChatView: View {
   var body: some View {
     NavigationView {
       VStack(spacing: 0) {
-        // Instuctions
+        // Instructions
         if messages.isEmpty {
           Text("Welcome to Foundation Explorer. Enter a message to begin interacting with the Foundation Model.")
             .font(.title2)
