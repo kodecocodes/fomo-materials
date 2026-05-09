@@ -107,7 +107,8 @@ struct HelpMePackView: View {
         displayedComponents: .date
       )
       Button {
-        // Add Button Action
+        createNewSession()
+        generatePackingList()
       } label: {
         generateButtonLabel
           .frame(maxWidth: .infinity, alignment: .center)
@@ -140,6 +141,67 @@ struct HelpMePackView: View {
           .foregroundStyle(.secondary)
       } else {
         Text(LocalizedStringKey(information.packingRecommendation))
+      }
+    }
+  }
+  
+  func createNewSession() {
+    // 1
+    let instructions = """
+      You are a packing assistant that creates practical packing lists for travelers.
+
+      Use the available tools whenever current weather information is needed.
+      Also use available tools to convert locations and city names into
+      latitude and longitude
+      Do not guess weather conditions, temperatures, or precipitation.
+
+      When creating a packing list:
+      - First determine the trip destination and dates.
+      - Use tools to get the forecast for the destination and travel dates.
+      - Base weather-related recommendations on tool results.
+      - Recommend only items that are useful for the trip conditions.
+      - Keep the list concise, realistic, and grouped by category.
+      - Explain briefly why weather-specific items are included.
+      """
+    
+    // 2
+    session = LanguageModelSession(
+      tools: [GeoLookupTool(), WeatherForecastTool()],
+      instructions: instructions
+    )
+  }
+  
+  func generatePackingList() {
+    // 1
+    let prompt = """
+    Create a weather-aware packing list for this trip.
+
+    Destination: \(information.destination).
+    Travel dates: \(startDate.formatted(date: .numeric, time: .omitted)) through \(endDate.formatted(date: .numeric, time: .omitted)).
+
+    1. Retrieve the weather forecast for the travel dates.
+    2. Use the forecast to decide what clothing and accessories are needed.
+
+    Do not assume weather conditions from general knowledge.
+    """
+
+    // 2
+    Task {
+      // 3
+      isLoading = true
+      defer {
+        isLoading = false
+      }
+      // 4
+      let stream = session.streamResponse(to: prompt)
+      // 5
+      do {
+        for try await partialResponse in stream {
+          information.packingRecommendation = partialResponse.content
+        }
+      // 6
+      } catch {
+        information.packingRecommendation = "Error: \(error.localizedDescription)"
       }
     }
   }
