@@ -31,7 +31,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A9656C502FAEA64000B0393E /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
+		A9656C492FAEA5FA00B0393E /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
 		A97CBA382FABFF6E007D4CDE /* Services */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Services; sourceTree = "<group>"; };
 		A97CBA592FAC0814007D4CDE /* Tools */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tools; sourceTree = "<group>"; };
 		A97CBA5C2FAC0EFB007D4CDE /* Transcript Views */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Transcript Views"; sourceTree = "<group>"; };
@@ -69,7 +69,7 @@
 		18D775BF22AD944300AE281E /* HelpMePack */ = {
 			isa = PBXGroup;
 			children = (
-				A9656C502FAEA64000B0393E /* Models */,
+				A9656C492FAEA5FA00B0393E /* Models */,
 				A97CBA5C2FAC0EFB007D4CDE /* Transcript Views */,
 				A97CBA592FAC0814007D4CDE /* Tools */,
 				A97CBA382FABFF6E007D4CDE /* Services */,
@@ -111,7 +111,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A9656C502FAEA64000B0393E /* Models */,
+				A9656C492FAEA5FA00B0393E /* Models */,
 				A97CBA382FABFF6E007D4CDE /* Services */,
 				A97CBA592FAC0814007D4CDE /* Tools */,
 				A97CBA5C2FAC0EFB007D4CDE /* Transcript Views */,
