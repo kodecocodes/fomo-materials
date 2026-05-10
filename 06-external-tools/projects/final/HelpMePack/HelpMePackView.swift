@@ -199,7 +199,34 @@ struct HelpMePackView: View {
         for try await partialResponse in stream {
           information.packingRecommendation = partialResponse.content
         }
-      // 6
+        // 6
+        // 1
+      } catch let error as LanguageModelSession.ToolCallError {
+        var errorString: String
+        // 2
+        errorString = "Error occurred in \(error.tool.name)\n"
+        // 3
+        // 1
+        if let underlyingError = error.underlyingError as? WeatherServiceError2 {
+          // 2
+          if case let .serverError(_, message) = underlyingError {
+            // 3
+            if message?.contains("Data Unavailable For Requested Point") ?? false {
+              errorString += """
+              The requested location is not covered by the National Weather Service.
+              
+              Please Check Your Location and Try Again.
+              """
+            } else {
+              errorString += underlyingError.errorDescription ?? error.localizedDescription
+            }
+          // 4
+          } else {
+            errorString += underlyingError.errorDescription ?? error.localizedDescription
+          }
+        }
+        // 4
+        information.packingRecommendation = errorString
       } catch {
         information.packingRecommendation = "Error: \(error.localizedDescription)"
       }

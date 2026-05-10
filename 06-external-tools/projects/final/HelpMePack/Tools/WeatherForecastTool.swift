@@ -73,7 +73,7 @@ struct WeatherForecastTool: Tool {
 
   func call(arguments: Arguments) async throws -> WeatherInformation {
     // 1
-    let service = NWSWeatherService()
+    let service = NWSWeatherService2()
     do {
       // 2
       let forecast = try await service.forecast(latitude: arguments.latitude, longitude: arguments.longitude)

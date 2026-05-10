@@ -28,7 +28,7 @@ struct NWSWeatherService {
 
   init(
     session: URLSession = .shared,
-    // Change Below to Your Email
+    //  Change Below to Your Email
     userAgent: String = "HelpMePack/1.0 email@example.com"
   ) {
     self.session = session
