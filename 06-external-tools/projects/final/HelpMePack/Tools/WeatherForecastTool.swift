@@ -74,15 +74,13 @@ struct WeatherForecastTool: Tool {
   func call(arguments: Arguments) async throws -> WeatherInformation {
     // 1
     let service = NWSWeatherService2()
-    do {
-      // 2
-      let forecast = try await service.forecast(latitude: arguments.latitude, longitude: arguments.longitude)
-      // 3
-      let convertedForecast = WeatherInformation(
-        locationName: forecast.locationName,
-        forecasts: forecast.periods.map { WeatherForecast(fromPeriod: $0) }
-      )
-      return convertedForecast
-    }
+    // 2
+    let forecast = try await service.forecast(latitude: arguments.latitude, longitude: arguments.longitude)
+    // 3
+    let convertedForecast = WeatherInformation(
+      locationName: forecast.locationName,
+      forecasts: forecast.periods.map { WeatherForecast(fromPeriod: $0) }
+    )
+    return convertedForecast
   }
 }

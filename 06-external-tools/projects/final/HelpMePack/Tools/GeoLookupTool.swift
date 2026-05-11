@@ -30,7 +30,23 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
+import MapKit
 import FoundationModels
+
+enum GeocodingError: Error {
+  case invalidRequest
+  case noMatchingLocation
+}
+
+@Generable(description: "Contains a location name and the latitude and longitude for that location.")
+struct GeocodedLocation {
+  @Guide(description: "Location Name")
+  let name: String
+  @Guide(description: "Latitude of Location")
+  let latitude: Double
+  @Guide(description: "Longitude of Location")
+  let longitude: Double
+}
 
 struct GeoLookupTool: Tool {
   let name = "GeolocationTool"
@@ -42,13 +58,33 @@ struct GeoLookupTool: Tool {
     var location: String
   }
   
-  // 1
   func call(arguments: Arguments) async throws -> GeocodedLocation  {
+    let placeName = arguments.location
+
+    // 1
+    guard let request = MKGeocodingRequest(addressString: placeName) else {
+      throw GeocodingError.invalidRequest
+    }
+
     // 2
-    let name = arguments.location
+    let mapItems = try await request.mapItems
+    guard let item = mapItems.first else {
+      throw GeocodingError.noMatchingLocation
+    }
+
     // 3
-    let coordinates = try await GeocodingService.coordinates(for: name)
+    let coordinate = item.location.coordinate
+    let name =
+      item.name ??
+      item.address?.shortAddress ??
+      item.address?.fullAddress ??
+      placeName
+
     // 4
-    return GeocodedLocation(name: name, latitude: coordinates.latitude, longitude: coordinates.longitude)
+    return GeocodedLocation(
+      name: name,
+      latitude: coordinate.latitude,
+      longitude: coordinate.longitude
+    )
   }
 }

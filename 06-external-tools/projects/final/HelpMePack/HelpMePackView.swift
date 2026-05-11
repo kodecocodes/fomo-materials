@@ -46,7 +46,6 @@ struct HelpMePackView: View {
     let end = calendar.date(byAdding: .day, value: 7, to: start)!
     return start...end
   }
-  @State var destinationCoordinates: GeocodedLocation?
   
   var body: some View {
     NavigationStack {
@@ -79,21 +78,6 @@ struct HelpMePackView: View {
     Section("Trip") {
       TextField("Destination City", text: $information.destination)
         .textInputAutocapitalization(.words)
-        .task(id: information.destination) {
-          do {
-            try await Task.sleep(nanoseconds: 500_000_000)
-            destinationCoordinates = try await GeocodingService.coordinates(for: information.destination)
-          } catch {
-            print(error.localizedDescription)
-          }
-        }
-      if let destination = destinationCoordinates {
-        Text(
-          "Lat: \(destination.latitude.formatted(.number.precision(.fractionLength(2)))) " +
-          "Long: \(destination.longitude.formatted(.number.precision(.fractionLength(2))))"
-        )
-        .font(.caption2)
-      }
       DatePicker(
         "Start Date",
         selection: $startDate,
@@ -144,7 +128,7 @@ struct HelpMePackView: View {
       }
     }
   }
-  
+
   func createNewSession() {
     // 1
     let instructions = """
