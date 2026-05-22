@@ -95,7 +95,7 @@ private struct TranscriptSummary: View {
         .lineLimit(2)
         .padding(.top, 4)
     } else {
-      Text("Open details to transcribe")
+      Text("No transcription available.")
         .font(.caption)
         .foregroundStyle(.secondary)
         .padding(.top, 4)

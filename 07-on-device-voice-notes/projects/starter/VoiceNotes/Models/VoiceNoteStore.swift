@@ -162,7 +162,6 @@ final class VoiceNoteStore: ObservableObject {
 
     notes.removeAll { $0.id == note.id }
     transcribingNoteIDs.remove(note.id)
-    analyzingNoteIDs.remove(note.id)
     repository.deleteRecording(for: note)
     saveNotes()
   }
@@ -188,14 +187,9 @@ final class VoiceNoteStore: ObservableObject {
   }
 
   #if DEBUG
-  func clearSampleSeedFlagForTesting() {
-    repository.clearSampleSeedFlagForTesting()
-  }
-
   func resetSampleNotesForTesting() {
     stopPlayback()
     transcribingNoteIDs.removeAll()
-    analyzingNoteIDs.removeAll()
     notes = repository.resetSampleNotesForTesting(from: notes)
   }
   #endif

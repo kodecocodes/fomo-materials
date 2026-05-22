@@ -192,15 +192,6 @@ private struct VoiceNoteTranscriptSection: View {
           Text("No transcript is available for this recording yet.")
             .font(.subheadline)
             .foregroundStyle(.secondary)
-
-          Button {
-            Task {
-              // Call Transcribe
-            }
-          } label: {
-            Label("Transcribe", systemImage: "text.bubble")
-          }
-          .buttonStyle(.borderedProminent)
         }
       }
     }

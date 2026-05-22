@@ -42,14 +42,13 @@ final class VoiceNoteStore: ObservableObject {
   @Published private(set) var playbackNoteID: VoiceNote.ID?
   @Published private(set) var playbackTime: TimeInterval = 0
   @Published private(set) var transcribingNoteIDs: Set<VoiceNote.ID> = []
-  @Published private(set) var analyzingNoteIDs: Set<VoiceNote.ID> = []
+  // @Published private(set) var analyzingNoteIDs: Set<VoiceNote.ID> = []
   @Published var permissionMessage: String?
 
   private let repository = VoiceNoteRepository()
   private let recorder = VoiceNoteRecorder()
   private let player = VoiceNotePlayer()
-  // private let transcriptionService = SpeechTranscriptionService()
-  // private let analysisService = NoteAnalysisService()
+  private let transcriptionService = SpeechTranscriptionService()
 
   private var recordingTimer: Timer?
   private var playbackTimer: Timer?
@@ -125,6 +124,10 @@ final class VoiceNoteStore: ObservableObject {
     )
     notes.insert(note, at: 0)
     saveNotes()
+    
+    Task {
+      await transcribeRecording(note)
+    }
   }
 
   func togglePlayback(for note: VoiceNote) {
@@ -162,7 +165,6 @@ final class VoiceNoteStore: ObservableObject {
 
     notes.removeAll { $0.id == note.id }
     transcribingNoteIDs.remove(note.id)
-    analyzingNoteIDs.remove(note.id)
     repository.deleteRecording(for: note)
     saveNotes()
   }
@@ -188,17 +190,32 @@ final class VoiceNoteStore: ObservableObject {
   }
 
   #if DEBUG
-  func clearSampleSeedFlagForTesting() {
-    repository.clearSampleSeedFlagForTesting()
-  }
-
   func resetSampleNotesForTesting() {
     stopPlayback()
-    transcribingNoteIDs.removeAll()
-    analyzingNoteIDs.removeAll()
     notes = repository.resetSampleNotesForTesting(from: notes)
   }
   #endif
+  
+  func transcribeRecording(_ note: VoiceNote) async {
+    // 1
+    guard note.transcript?.isEmpty != false else { return }
+    guard !transcribingNoteIDs.contains(note.id) else { return }
+
+    // 2
+    transcribingNoteIDs.insert(note.id)
+    defer {
+      transcribingNoteIDs.remove(note.id)
+    }
+
+    do {
+      // 3
+      let transcript = try await transcriptionService.transcribeAudio(at: url(for: note))
+      updateTranscript(transcript, for: note.id)
+    } catch {
+      // 4
+      permissionMessage = error.localizedDescription
+    }
+  }
 
   private func updateTranscript(_ transcript: String, for noteID: VoiceNote.ID) {
     guard let index = notes.firstIndex(where: { $0.id == noteID }) else { return }

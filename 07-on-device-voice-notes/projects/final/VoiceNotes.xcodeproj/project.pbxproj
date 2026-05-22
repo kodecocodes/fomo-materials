@@ -33,6 +33,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A95289E72FBF7BE50089E518 /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
 		A9528A222FBFBB110089E518 /* SampleData */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SampleData; sourceTree = "<group>"; };
+		A98CAA582FC0C84E008A0B32 /* Services */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Services; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +70,7 @@
 			children = (
 				A9528A222FBFBB110089E518 /* SampleData */,
 				A95289E72FBF7BE50089E518 /* Models */,
+				A98CAA582FC0C84E008A0B32 /* Services */,
 				1839F4AF25190F2A00BB00F1 /* AppMain.swift */,
 				18D775C422AD944300AE281E /* ContentView.swift */,
 				A95289EE2FBF7C9C0089E518 /* RecorderPanel.swift */,
@@ -109,6 +111,7 @@
 			fileSystemSynchronizedGroups = (
 				A95289E72FBF7BE50089E518 /* Models */,
 				A9528A222FBFBB110089E518 /* SampleData */,
+				A98CAA582FC0C84E008A0B32 /* Services */,
 			);
 			name = VoiceNotes;
 			productName = MyRWTutorial;

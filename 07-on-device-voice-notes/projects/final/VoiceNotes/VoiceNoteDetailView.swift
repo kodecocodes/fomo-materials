@@ -192,10 +192,9 @@ private struct VoiceNoteTranscriptSection: View {
           Text("No transcript is available for this recording yet.")
             .font(.subheadline)
             .foregroundStyle(.secondary)
-
           Button {
             Task {
-              // Call Transcribe
+              await store.transcribeRecording(note)
             }
           } label: {
             Label("Transcribe", systemImage: "text.bubble")
@@ -297,7 +296,7 @@ private struct FlowLayout: Layout {
 #Preview {
   NavigationView {
     VoiceNoteDetailView(
-      noteID: VoiceNoteStore.mock.notes[0].id
+      noteID: VoiceNoteStore.mock.notes[2].id
     )
     .environmentObject(VoiceNoteStore.mock)
   }

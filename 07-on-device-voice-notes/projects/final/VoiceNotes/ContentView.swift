@@ -65,16 +65,8 @@ struct ContentView: View {
       #if DEBUG
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          Menu {
-            Button("Clear Seed Flag", systemImage: "flag.slash") {
-              store.clearSampleSeedFlagForTesting()
-            }
-
-            Button("Reset Sample Notes", systemImage: "arrow.clockwise.circle") {
-              store.resetSampleNotesForTesting()
-            }
-          } label: {
-            Label("Sample Data", systemImage: "shippingbox")
+          Button("Reset Sample Notes", systemImage: "arrow.clockwise.circle") {
+            store.resetSampleNotesForTesting()
           }
         }
       }
