@@ -52,7 +52,7 @@ struct VoiceNoteDetailView: View {
         .navigationTitle(note.title)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
+          ToolbarItemGroup(placement: .topBarTrailing) {
             Button(role: .destructive) {
               isShowingDeleteConfirmation = true
             } label: {
@@ -195,7 +195,7 @@ private struct VoiceNoteTranscriptSection: View {
 
           Button {
             Task {
-              await store.transcribe(note)
+              // Call Transcribe
             }
           } label: {
             Label("Transcribe", systemImage: "text.bubble")
@@ -210,10 +210,95 @@ private struct VoiceNoteTranscriptSection: View {
   }
 }
 
+private extension VoiceNote {
+  var hasTranscript: Bool {
+    transcript?.isEmpty == false
+  }
+}
+
+private struct FlowLayout: Layout {
+  var spacing: CGFloat
+
+  func sizeThatFits(
+    proposal: ProposedViewSize,
+    subviews: Subviews,
+    cache: inout Void
+  ) -> CGSize {
+    let rows = rows(in: proposal.width ?? 0, subviews: subviews)
+    return CGSize(
+      width: proposal.width ?? rows.map(\.width).max() ?? 0,
+      height: rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0))
+    )
+  }
+
+  func placeSubviews(
+    in bounds: CGRect,
+    proposal: ProposedViewSize,
+    subviews: Subviews,
+    cache: inout Void
+  ) {
+    var y = bounds.minY
+
+    for row in rows(in: bounds.width, subviews: subviews) {
+      var x = bounds.minX
+
+      for item in row.items {
+        item.subview.place(
+          at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2),
+          proposal: ProposedViewSize(item.size)
+        )
+        x += item.size.width + spacing
+      }
+
+      y += row.height + spacing
+    }
+  }
+
+  private func rows(in width: CGFloat, subviews: Subviews) -> [Row] {
+    var rows: [Row] = []
+    var currentRow = Row()
+
+    for subview in subviews {
+      let size = subview.sizeThatFits(.unspecified)
+      let nextWidth = currentRow.items.isEmpty
+        ? size.width
+        : currentRow.width + spacing + size.width
+
+      if nextWidth > width, !currentRow.items.isEmpty {
+        rows.append(currentRow)
+        currentRow = Row()
+      }
+
+      currentRow.items.append(RowItem(subview: subview, size: size))
+      currentRow.width = currentRow.items.isEmpty ? 0 : min(max(currentRow.width, nextWidth), width)
+      currentRow.height = max(currentRow.height, size.height)
+    }
+
+    if !currentRow.items.isEmpty {
+      rows.append(currentRow)
+    }
+
+    return rows
+  }
+
+  private struct Row {
+    var items: [RowItem] = []
+    var width: CGFloat = 0
+    var height: CGFloat = 0
+  }
+
+  private struct RowItem {
+    let subview: LayoutSubview
+    let size: CGSize
+  }
+}
+
 
 #Preview {
-  VoiceNoteDetailView(
-    noteID: VoiceNoteStore.mock.notes[1].id
-  )
-  .environmentObject(VoiceNoteStore.mock)
+  NavigationView {
+    VoiceNoteDetailView(
+      noteID: VoiceNoteStore.mock.notes[0].id
+    )
+    .environmentObject(VoiceNoteStore.mock)
+  }
 }

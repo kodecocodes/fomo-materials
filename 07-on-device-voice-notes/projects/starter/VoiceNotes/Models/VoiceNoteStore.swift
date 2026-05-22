@@ -34,7 +34,7 @@ import AVFoundation
 import Foundation
 
 @MainActor
-final class VoiceNoteStore: NSObject, ObservableObject {
+final class VoiceNoteStore: ObservableObject {
   @Published private(set) var notes: [VoiceNote] = []
   @Published private(set) var isRecording = false
   @Published private(set) var elapsedTime: TimeInterval = 0
@@ -42,18 +42,19 @@ final class VoiceNoteStore: NSObject, ObservableObject {
   @Published private(set) var playbackNoteID: VoiceNote.ID?
   @Published private(set) var playbackTime: TimeInterval = 0
   @Published private(set) var transcribingNoteIDs: Set<VoiceNote.ID> = []
+  @Published private(set) var analyzingNoteIDs: Set<VoiceNote.ID> = []
   @Published var permissionMessage: String?
 
-  private let transcriptionService = SpeechTranscriptionService()
-  private var recorder: AVAudioRecorder?
-  private var player: AVAudioPlayer?
+  private let repository = VoiceNoteRepository()
+  private let recorder = VoiceNoteRecorder()
+  private let player = VoiceNotePlayer()
+  // private let transcriptionService = SpeechTranscriptionService()
+  // private let analysisService = NoteAnalysisService()
+
   private var recordingTimer: Timer?
   private var playbackTimer: Timer?
   private var recordingStartDate: Date?
   private var activeRecordingURL: URL?
-
-  private let metadataURL: URL
-  private let recordingsDirectory: URL
   
   #if DEBUG
     convenience init(mockNotes: [VoiceNote]) {
@@ -62,14 +63,13 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     }
   #endif
 
-  override init() {
-    let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    recordingsDirectory = documents.appendingPathComponent("Recordings", isDirectory: true)
-    metadataURL = documents.appendingPathComponent("VoiceNotes.json")
-
-    super.init()
-    createRecordingsDirectory()
-    loadNotes()
+  init() {
+    notes = repository.seedNotesIfNeeded()
+    player.didFinishPlaying = { [weak self] in
+      Task { @MainActor in
+        self?.finishPlayback()
+      }
+    }
   }
 
   var hasNotes: Bool {
@@ -86,23 +86,9 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     }
 
     stopPlayback()
-    configureAudioSessionForRecording()
-
-    let id = UUID()
-    let url = recordingsDirectory.appendingPathComponent("\(id.uuidString).m4a")
-    let settings: [String: Any] = [
-      AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-      AVSampleRateKey: 44_100,
-      AVNumberOfChannelsKey: 1,
-      AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-    ]
 
     do {
-      let recorder = try AVAudioRecorder(url: url, settings: settings)
-      recorder.delegate = self
-      recorder.record()
-
-      self.recorder = recorder
+      let url = try recorder.startRecording(in: repository.recordingsDirectory)
       activeRecordingURL = url
       recordingStartDate = .now
       elapsedTime = 0
@@ -115,21 +101,20 @@ final class VoiceNoteStore: NSObject, ObservableObject {
   }
 
   func stopRecording() {
-    guard isRecording, let recorder else { return }
+    guard isRecording else { return }
 
-    recorder.stop()
     stopTimer()
 
     let duration = elapsedTime
-    let url = recorder.url
-    self.recorder = nil
+    guard let url = recorder.stopRecording() ?? activeRecordingURL else { return }
+
     activeRecordingURL = nil
     recordingStartDate = nil
     elapsedTime = 0
     isRecording = false
 
     guard duration >= 0.5 else {
-      try? FileManager.default.removeItem(at: url)
+      repository.deleteRecording(at: url)
       return
     }
 
@@ -140,10 +125,6 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     )
     notes.insert(note, at: 0)
     saveNotes()
-
-    Task {
-      await transcribe(note)
-    }
   }
 
   func togglePlayback(for note: VoiceNote) {
@@ -153,10 +134,9 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     }
 
     stopRecording()
-    configureAudioSessionForPlayback()
 
-    if playbackNoteID == note.id, let player {
-      player.play()
+    if playbackNoteID == note.id, player.isPaused {
+      player.resume()
       playingNoteID = note.id
       startPlaybackTimer()
       return
@@ -165,11 +145,7 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     stopPlayback()
 
     do {
-      let player = try AVAudioPlayer(contentsOf: url(for: note))
-      player.delegate = self
-      player.prepareToPlay()
-      player.play()
-      self.player = player
+      try player.play(url: url(for: note))
       playbackNoteID = note.id
       playbackTime = player.currentTime
       playingNoteID = note.id
@@ -180,20 +156,21 @@ final class VoiceNoteStore: NSObject, ObservableObject {
   }
 
   func delete(_ note: VoiceNote) {
-    if playingNoteID == note.id {
+    if playbackNoteID == note.id {
       stopPlayback()
     }
 
     notes.removeAll { $0.id == note.id }
     transcribingNoteIDs.remove(note.id)
-    try? FileManager.default.removeItem(at: url(for: note))
+    analyzingNoteIDs.remove(note.id)
+    repository.deleteRecording(for: note)
     saveNotes()
   }
 
   func seekPlayback(for note: VoiceNote, to time: TimeInterval) {
     let clampedTime = min(max(0, time), note.duration)
 
-    guard playbackNoteID == note.id, let player else {
+    guard playbackNoteID == note.id else {
       playbackTime = clampedTime
       return
     }
@@ -202,30 +179,26 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     playbackTime = clampedTime
   }
 
-  func transcribe(_ note: VoiceNote) async {
-    guard note.transcript?.isEmpty != false else { return }
-    guard !transcribingNoteIDs.contains(note.id) else { return }
-
-    transcribingNoteIDs.insert(note.id)
-
-    do {
-      let transcript = try await transcriptionService.transcribeAudio(at: url(for: note))
-      updateTranscript(transcript, for: note.id)
-    } catch {
-      permissionMessage = (error as? LocalizedError)?.errorDescription
-        ?? "This voice note could not be transcribed."
-    }
-
-    transcribingNoteIDs.remove(note.id)
-  }
-
   func url(for note: VoiceNote) -> URL {
-    recordingsDirectory.appendingPathComponent(note.filename)
+    repository.url(for: note)
   }
 
   func note(withID noteID: VoiceNote.ID) -> VoiceNote? {
     notes.first { $0.id == noteID }
   }
+
+  #if DEBUG
+  func clearSampleSeedFlagForTesting() {
+    repository.clearSampleSeedFlagForTesting()
+  }
+
+  func resetSampleNotesForTesting() {
+    stopPlayback()
+    transcribingNoteIDs.removeAll()
+    analyzingNoteIDs.removeAll()
+    notes = repository.resetSampleNotesForTesting(from: notes)
+  }
+  #endif
 
   private func updateTranscript(_ transcript: String, for noteID: VoiceNote.ID) {
     guard let index = notes.firstIndex(where: { $0.id == noteID }) else { return }
@@ -233,21 +206,8 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     saveNotes()
   }
 
-  private func createRecordingsDirectory() {
-    try? FileManager.default.createDirectory(
-      at: recordingsDirectory,
-      withIntermediateDirectories: true
-    )
-  }
-
-  private func loadNotes() {
-    guard let data = try? Data(contentsOf: metadataURL) else { return }
-    notes = (try? JSONDecoder().decode([VoiceNote].self, from: data)) ?? []
-  }
-
   private func saveNotes() {
-    guard let data = try? JSONEncoder().encode(notes) else { return }
-    try? data.write(to: metadataURL, options: [.atomic])
+    repository.saveNotes(notes)
   }
 
   private func startTimer() {
@@ -269,8 +229,8 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     stopPlaybackTimer()
     playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
       Task { @MainActor in
-        guard let self, let player = self.player else { return }
-        self.playbackTime = player.currentTime
+        guard let self else { return }
+        self.playbackTime = self.player.currentTime
       }
     }
   }
@@ -281,17 +241,18 @@ final class VoiceNoteStore: NSObject, ObservableObject {
   }
 
   private func pausePlayback() {
-    player?.pause()
-    if let player {
-      playbackTime = player.currentTime
-    }
+    player.pause()
+    playbackTime = player.currentTime
     playingNoteID = nil
     stopPlaybackTimer()
   }
 
   private func stopPlayback() {
-    player?.stop()
-    player = nil
+    player.stop()
+    finishPlayback()
+  }
+
+  private func finishPlayback() {
     playingNoteID = nil
     playbackNoteID = nil
     playbackTime = 0
@@ -310,22 +271,6 @@ final class VoiceNoteStore: NSObject, ObservableObject {
     #endif
   }
 
-  private func configureAudioSessionForRecording() {
-    #if os(iOS)
-    let session = AVAudioSession.sharedInstance()
-    try? session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-    try? session.setActive(true)
-    #endif
-  }
-
-  private func configureAudioSessionForPlayback() {
-    #if os(iOS)
-    let session = AVAudioSession.sharedInstance()
-    try? session.setCategory(.playback, mode: .default)
-    try? session.setActive(true)
-    #endif
-  }
-
   private func defaultTitle(for date: Date) -> String {
     let formatter = DateFormatter()
     formatter.dateStyle = .medium
@@ -334,22 +279,10 @@ final class VoiceNoteStore: NSObject, ObservableObject {
   }
 }
 
-extension VoiceNoteStore: AVAudioRecorderDelegate, AVAudioPlayerDelegate {
-  nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-    Task { @MainActor in
-      self.playingNoteID = nil
-      self.playbackNoteID = nil
-      self.playbackTime = 0
-      self.player = nil
-      self.stopPlaybackTimer()
-    }
-  }
-}
-
 #if DEBUG
 extension VoiceNoteStore {
   static var mock: VoiceNoteStore {
-    VoiceNoteStore(mockNotes: [.mock, .mockWithTranscript])
+    VoiceNoteStore(mockNotes: [.mockWithAnalysis, .mockWithTranscript, .mock])
   }
 }
 #endif

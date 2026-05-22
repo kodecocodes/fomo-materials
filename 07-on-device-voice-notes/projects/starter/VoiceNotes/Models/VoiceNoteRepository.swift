@@ -1,15 +1,15 @@
 /// Copyright (c) 2026 Kodeco Inc.
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
 /// in the Software without restriction, including without limitation the rights
 /// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 /// copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
 /// distribute, sublicense, create a derivative work, and/or sell copies of the
 /// Software in any work that is designed, intended, or marketed for pedagogical or
@@ -17,7 +17,7 @@
 /// or information technology.  Permission for such use, copying, modification,
 /// merger, publication, distribution, sublicensing, creation of derivative works,
 /// or sale is expressly withheld.
-/// 
+///
 /// This project and source code may use libraries or frameworks that are
 /// released under various Open-Source licenses. Use of those libraries and
 /// frameworks are governed by their own individual licenses.
@@ -32,58 +32,40 @@
 
 import Foundation
 
-struct VoiceNote: Identifiable, Codable, Equatable {
-  let id: UUID
-  var title: String
-  let createdAt: Date
-  var duration: TimeInterval
-  let filename: String
-  var transcript: String?
+struct VoiceNoteRepository {
+  let recordingsDirectory: URL
+  private let metadataURL: URL
 
-  init(
-    id: UUID = UUID(),
-    title: String,
-    createdAt: Date = .now,
-    duration: TimeInterval,
-    filename: String,
-    transcript: String? = nil
-  ) {
-    self.id = id
-    self.title = title
-    self.createdAt = createdAt
-    self.duration = duration
-    self.filename = filename
-    self.transcript = transcript
+  init() {
+    let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    recordingsDirectory = documents.appendingPathComponent("Recordings", isDirectory: true)
+    metadataURL = documents.appendingPathComponent("VoiceNotes.json")
+
+    try? FileManager.default.createDirectory(
+      at: recordingsDirectory,
+      withIntermediateDirectories: true
+    )
+  }
+
+  func loadNotes() -> [VoiceNote] {
+    guard let data = try? Data(contentsOf: metadataURL) else { return [] }
+    return (try? JSONDecoder().decode([VoiceNote].self, from: data)) ?? []
+  }
+
+  func saveNotes(_ notes: [VoiceNote]) {
+    guard let data = try? JSONEncoder().encode(notes) else { return }
+    try? data.write(to: metadataURL, options: [.atomic])
+  }
+
+  func url(for note: VoiceNote) -> URL {
+    recordingsDirectory.appendingPathComponent(note.filename)
+  }
+
+  func deleteRecording(for note: VoiceNote) {
+    try? FileManager.default.removeItem(at: url(for: note))
+  }
+
+  func deleteRecording(at url: URL) {
+    try? FileManager.default.removeItem(at: url)
   }
 }
-
-#if DEBUG
-extension VoiceNote {
-    static let mock = VoiceNote(
-        title: "Weekly planning",
-        createdAt: .now,
-        duration: 183,
-        filename: "mock.m4a"
-    )
-
-    static let mockWithTranscript = VoiceNote(
-        title: "Project ideas",
-        createdAt: .now,
-        duration: 94,
-        filename: "mock2.m4a",
-        transcript: """
-          Had the call with Marcus and the design team this morning. We need to get the revised mockups over to the client by Thursday. Marcus is going to handle the export, I need to write up the meeting notes and send them to Sarah. Overall I think the direction is good but the color palette still needs work.
-          """
-    )
-
-    static let mockWithAnalysis = VoiceNote(
-        title: "Launch checklist",
-        createdAt: .now,
-        duration: 126,
-        filename: "mock3.m4a",
-        transcript: """
-          Before the beta goes out, I need to ask Maya to review the onboarding copy, follow up with Jordan about the icon export, and make sure the settings screen includes the new privacy explanation. The biggest thing is keeping the first-run experience short and clear.
-          """
-    )
-}
-#endif

@@ -35,7 +35,7 @@ import SwiftUI
 @main
 struct AppMain: App {
   @StateObject private var store = VoiceNoteStore()
-
+  
   var body: some Scene {
     WindowGroup {
       ContentView()

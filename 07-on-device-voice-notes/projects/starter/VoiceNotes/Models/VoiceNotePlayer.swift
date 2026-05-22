@@ -1,15 +1,15 @@
 /// Copyright (c) 2026 Kodeco Inc.
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
 /// in the Software without restriction, including without limitation the rights
 /// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 /// copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
 /// distribute, sublicense, create a derivative work, and/or sell copies of the
 /// Software in any work that is designed, intended, or marketed for pedagogical or
@@ -17,7 +17,7 @@
 /// or information technology.  Permission for such use, copying, modification,
 /// merger, publication, distribution, sublicensing, creation of derivative works,
 /// or sale is expressly withheld.
-/// 
+///
 /// This project and source code may use libraries or frameworks that are
 /// released under various Open-Source licenses. Use of those libraries and
 /// frameworks are governed by their own individual licenses.
@@ -30,60 +30,56 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
+import AVFoundation
 import Foundation
 
-struct VoiceNote: Identifiable, Codable, Equatable {
-  let id: UUID
-  var title: String
-  let createdAt: Date
-  var duration: TimeInterval
-  let filename: String
-  var transcript: String?
+final class VoiceNotePlayer: NSObject, AVAudioPlayerDelegate {
+  var didFinishPlaying: (() -> Void)?
 
-  init(
-    id: UUID = UUID(),
-    title: String,
-    createdAt: Date = .now,
-    duration: TimeInterval,
-    filename: String,
-    transcript: String? = nil
-  ) {
-    self.id = id
-    self.title = title
-    self.createdAt = createdAt
-    self.duration = duration
-    self.filename = filename
-    self.transcript = transcript
+  private var player: AVAudioPlayer?
+
+  var currentTime: TimeInterval {
+    get { player?.currentTime ?? 0 }
+    set { player?.currentTime = newValue }
+  }
+
+  var isPaused: Bool {
+    player != nil && player?.isPlaying == false
+  }
+
+  func play(url: URL) throws {
+    configureAudioSessionForPlayback()
+
+    let player = try AVAudioPlayer(contentsOf: url)
+    player.delegate = self
+    player.prepareToPlay()
+    player.play()
+    self.player = player
+  }
+
+  func resume() {
+    player?.play()
+  }
+
+  func pause() {
+    player?.pause()
+  }
+
+  func stop() {
+    player?.stop()
+    player = nil
+  }
+
+  func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+    self.player = nil
+    didFinishPlaying?()
+  }
+
+  private func configureAudioSessionForPlayback() {
+    #if os(iOS)
+    let session = AVAudioSession.sharedInstance()
+    try? session.setCategory(.playback, mode: .default)
+    try? session.setActive(true)
+    #endif
   }
 }
-
-#if DEBUG
-extension VoiceNote {
-    static let mock = VoiceNote(
-        title: "Weekly planning",
-        createdAt: .now,
-        duration: 183,
-        filename: "mock.m4a"
-    )
-
-    static let mockWithTranscript = VoiceNote(
-        title: "Project ideas",
-        createdAt: .now,
-        duration: 94,
-        filename: "mock2.m4a",
-        transcript: """
-          Had the call with Marcus and the design team this morning. We need to get the revised mockups over to the client by Thursday. Marcus is going to handle the export, I need to write up the meeting notes and send them to Sarah. Overall I think the direction is good but the color palette still needs work.
-          """
-    )
-
-    static let mockWithAnalysis = VoiceNote(
-        title: "Launch checklist",
-        createdAt: .now,
-        duration: 126,
-        filename: "mock3.m4a",
-        transcript: """
-          Before the beta goes out, I need to ask Maya to review the onboarding copy, follow up with Jordan about the icon export, and make sure the settings screen includes the new privacy explanation. The biggest thing is keeping the first-run experience short and clear.
-          """
-    )
-}
-#endif
