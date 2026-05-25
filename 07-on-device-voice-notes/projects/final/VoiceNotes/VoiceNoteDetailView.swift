@@ -280,7 +280,6 @@ private struct VoiceNoteTagsSection: View {
         }
       }
     }
-    .padding(16)
   }
 }
 
