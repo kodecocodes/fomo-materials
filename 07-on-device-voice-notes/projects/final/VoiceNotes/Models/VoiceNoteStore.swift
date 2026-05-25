@@ -42,13 +42,13 @@ final class VoiceNoteStore: ObservableObject {
   @Published private(set) var playbackNoteID: VoiceNote.ID?
   @Published private(set) var playbackTime: TimeInterval = 0
   @Published private(set) var transcribingNoteIDs: Set<VoiceNote.ID> = []
-  // @Published private(set) var analyzingNoteIDs: Set<VoiceNote.ID> = []
   @Published var permissionMessage: String?
 
   private let repository = VoiceNoteRepository()
   private let recorder = VoiceNoteRecorder()
   private let player = VoiceNotePlayer()
   private let transcriptionService = SpeechTranscriptionService()
+  private let analysisService = NoteAnalysisService()
 
   private var recordingTimer: Timer?
   private var playbackTimer: Timer?
@@ -126,10 +126,12 @@ final class VoiceNoteStore: ObservableObject {
     saveNotes()
     
     Task {
-      await transcribeRecording(note)
+      let transcript = await transcribeRecording(note)
+      guard let transcript = transcript else { return }
+      await performAnalysis(transcript, for: note.id)
     }
   }
-
+  
   func togglePlayback(for note: VoiceNote) {
     if playingNoteID == note.id {
       pausePlayback()
@@ -196,10 +198,10 @@ final class VoiceNoteStore: ObservableObject {
   }
   #endif
   
-  func transcribeRecording(_ note: VoiceNote) async {
+  func transcribeRecording(_ note: VoiceNote) async -> String? {
     // 1
-    guard note.transcript?.isEmpty != false else { return }
-    guard !transcribingNoteIDs.contains(note.id) else { return }
+    guard note.transcript?.isEmpty != false else { return nil }
+    guard !transcribingNoteIDs.contains(note.id) else { return nil }
 
     // 2
     transcribingNoteIDs.insert(note.id)
@@ -211,9 +213,11 @@ final class VoiceNoteStore: ObservableObject {
       // 3
       let transcript = try await transcriptionService.transcribeAudio(at: url(for: note))
       updateTranscript(transcript, for: note.id)
+      return transcript
     } catch {
       // 4
       permissionMessage = error.localizedDescription
+      return nil
     }
   }
 
@@ -222,7 +226,23 @@ final class VoiceNoteStore: ObservableObject {
     notes[index].transcript = transcript
     saveNotes()
   }
-
+  
+  private func updateTitle(_ title: String, for noteID: VoiceNote.ID) {
+    guard let index = notes.firstIndex(where: { $0.id == noteID }) else { return }
+    notes[index].title = title
+    saveNotes()
+  }
+  
+  private func updateAnalysis(_ analysis: NoteAnalysis, for noteID: VoiceNote.ID) {
+    guard let index = notes.firstIndex(where: { $0.id == noteID }) else { return }
+    notes[index].title = analysis.title
+    notes[index].summary = analysis.summary
+    notes[index].tags = analysis.tags
+    notes[index].actionItems = analysis.actionItems
+    notes[index].people = analysis.people
+    saveNotes()
+  }
+  
   private func saveNotes() {
     repository.saveNotes(notes)
   }
@@ -293,6 +313,18 @@ final class VoiceNoteStore: ObservableObject {
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
     return "Voice Note \(formatter.string(from: date))"
+  }
+  
+  func performAnalysis(_ transcript: String, for noteId: VoiceNote.ID) async {
+    guard !transcript.isEmpty else { return }
+
+    do {
+      let analysis = try await analysisService.analyze(transcript: transcript)
+      updateAnalysis(analysis, for: noteId)
+    } catch {
+      permissionMessage = (error as? LocalizedError)?.errorDescription
+        ?? "This voice note could not be analyzed."
+    }
   }
 }
 

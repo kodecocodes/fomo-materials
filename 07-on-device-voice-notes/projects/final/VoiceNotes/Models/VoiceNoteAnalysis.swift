@@ -31,63 +31,48 @@
 /// THE SOFTWARE.
 
 import Foundation
+import FoundationModels
 
-struct VoiceNote: Identifiable, Codable, Equatable {
-  let id: UUID
-  var title: String
-  let createdAt: Date
-  var duration: TimeInterval
-  let filename: String
-  var transcript: String?
-  var summary: String?
-  var tags = [String]()
-  var people = [String]()
-  var actionItems = [NoteActionItem]()
+@Generable(description: "A concise analysis of a transcribed voice note.")
+struct NoteAnalysis {
+  @Guide(description: "A concise title of a few words that summarizes the note contents.")
+  let title: String
 
-  init(
-    id: UUID = UUID(),
-    title: String,
-    createdAt: Date = .now,
-    duration: TimeInterval,
-    filename: String,
-    transcript: String? = nil
-  ) {
-    self.id = id
-    self.title = title
-    self.createdAt = createdAt
-    self.duration = duration
-    self.filename = filename
-    self.transcript = transcript
+  @Guide(description: "A two to three sentence summary of the voice note.")
+  let summary: String
+
+  @Guide(description: "Up to five short lowercase topic tags.", .count(1...5))
+  let tags: [String]
+
+  @Guide(description: "People referenced in the note..")
+  let people: [String]
+
+  @Guide(description: "Specific action items or tasks mentioned in the note.")
+  let actionItems: [NoteActionItem]
+}
+
+@Generable(description: "An actionable item or task extracted from the voice note.")
+struct NoteActionItem: Identifiable, Codable, Equatable {
+  let id = UUID()
+  @Guide(description: "The task or action to be completed.")
+  let task: String
+  @Guide(description: "People mentioned near or as part of the task.")
+  let person: [String]
+  
+  private enum CodingKeys: String, CodingKey {
+    case task
+    case person
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    task = try container.decode(String.self, forKey: .task)
+    person = try container.decode(Array<String>.self, forKey: .person)
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(task, forKey: .task)
+    try container.encode(person, forKey: .person)
   }
 }
-
-#if DEBUG
-extension VoiceNote {
-    static let mock = VoiceNote(
-        title: "Weekly planning",
-        createdAt: .now,
-        duration: 183,
-        filename: "mock.m4a"
-    )
-
-    static let mockWithTranscript = VoiceNote(
-        title: "Project ideas",
-        createdAt: .now,
-        duration: 94,
-        filename: "mock2.m4a",
-        transcript: """
-          Had the call with Marcus and the design team this morning. We need to get the revised mockups over to the client by Thursday. Marcus is going to handle the export, I need to write up the meeting notes and send them to Sarah. Overall I think the direction is good but the color palette still needs work.
-          """
-    )
-
-    static let mockWithAnalysis = VoiceNote(
-        title: "Launch checklist",
-        createdAt: .now,
-        duration: 126,
-        filename: "mock3.m4a",
-        transcript: """
-          Before the beta goes out, I need to ask Maya to review the onboarding copy, follow up with Jordan about the icon export, and make sure the settings screen includes the new privacy explanation. The biggest thing is keeping the first-run experience short and clear.
-          """
-    )
-}
-#endif
