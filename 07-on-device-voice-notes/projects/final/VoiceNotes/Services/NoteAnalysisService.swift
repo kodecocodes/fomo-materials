@@ -43,7 +43,9 @@ struct NoteAnalysisService {
 
     let session = LanguageModelSession()
     let prompt = """
-      Analyze the following voice note transcription. Create a concise title of a few words.
+      Analyze the following voice note transcription. Create a concise title of
+      a few words.
+
       Transcription: \(trimmedTitle)
       """
     let response = try await session.respond(to: prompt)

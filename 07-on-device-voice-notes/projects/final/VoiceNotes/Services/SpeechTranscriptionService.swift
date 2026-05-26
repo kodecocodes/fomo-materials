@@ -80,7 +80,8 @@ private func transcribeWithSpeechTranscriber(at url: URL) async throws -> String
     throw SpeechTranscriptionError.unavailable
   }
 
-  guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: .current) else {
+  guard let locale =
+    await SpeechTranscriber.supportedLocale(equivalentTo: .current) else {
     throw SpeechTranscriptionError.unsupportedLocale
   }
   
@@ -100,7 +101,8 @@ private func transcribeWithSpeechTranscriber(at url: URL) async throws -> String
       // 5
       guard result.isFinal else { continue }
       // 6
-      let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
+      let text = String(result.text.characters)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
       // 7
       guard !text.isEmpty else { continue }
 
@@ -117,7 +119,8 @@ private func transcribeWithSpeechTranscriber(at url: URL) async throws -> String
   // 2
   try await analyzer.start(inputAudioFile: audioFile, finishAfterFile: true)
   // 3
-  let transcript = try await resultsTask.value.trimmingCharacters(in: .whitespacesAndNewlines)
+  let transcript = try await resultsTask.value
+    .trimmingCharacters(in: .whitespacesAndNewlines)
 
   // 4
   guard !transcript.isEmpty else {
@@ -134,12 +137,18 @@ private func prepareAssets(for modules: [any SpeechModule]) async throws {
     return
   // 2
   case .downloading:
-    guard let request = try await AssetInventory.assetInstallationRequest(supporting: modules) else {
+    guard let request =
+      try await AssetInventory.assetInstallationRequest(
+        supporting: modules
+      ) else {
       throw SpeechTranscriptionError.unavailable
     }
     try await request.downloadAndInstall()
   case .supported:
-    guard let request = try await AssetInventory.assetInstallationRequest(supporting: modules) else {
+    guard let request =
+      try await AssetInventory.assetInstallationRequest(
+        supporting: modules
+      ) else {
       throw SpeechTranscriptionError.unavailable
     }
     try await request.downloadAndInstall()

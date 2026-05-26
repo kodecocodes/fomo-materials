@@ -214,7 +214,8 @@ final class VoiceNoteStore: ObservableObject {
 
     do {
       // 3
-      let transcript = try await transcriptionService.transcribeAudio(at: url(for: note))
+      let transcript =
+        try await transcriptionService.transcribeAudio(at: url(for: note))
       updateTranscript(transcript, for: note.id)
       return transcript
     } catch {
