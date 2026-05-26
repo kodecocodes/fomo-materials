@@ -33,74 +33,20 @@
 import Foundation
 import FoundationModels
 
-enum NoteAnalysisError: LocalizedError {
-  case missingTranscript
-  case transcriptTooLarge
-
-  var errorDescription: String? {
-    switch self {
-    case .missingTranscript:
-      "No transcript is available to analyze."
-    case .transcriptTooLarge:
-      "This transcript is too long for the current model."
-    }
-  }
-}
-
 struct NoteAnalysisService {
-  private func fitsInContext(_ prompt: String) async -> Bool {
-    let tokenLength: Int
+  func determineTitle(transcript: String) async throws -> String {
+    let trimmedTitle = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    // 1
-    if #available(iOS 26.4, *) {
-      // 2
-      let promptCalc = try? await SystemLanguageModel.default.tokenCount(for: prompt)
-      if let promptCalc = promptCalc {
-        tokenLength = promptCalc
-      } else {
-        tokenLength = prompt.count * 3 / 4
-      }
-    } else {
-      // 3
-      tokenLength = prompt.count * 3 / 4
-    }
-    
-    // 4
-    return tokenLength < SystemLanguageModel.default.contextSize * 3 / 4
-  }
-  
-  func analyze(transcript: String) async throws -> NoteAnalysis {
-    // 1
-    guard !transcript.isEmpty else {
-      throw NoteAnalysisError.missingTranscript
+    guard !trimmedTitle.isEmpty else {
+      return ""
     }
 
-    // 2
     let session = LanguageModelSession()
     let prompt = """
-      Analyze the following voice note transcription.
-
-      Create:
-      - A concise title of a few words
-      - A two to three sentence summary focused on the overall topic and key points.
-      - Up to five short lowercase tags, each one up to three words.
-      - Action items that the speaker intends to do, has committed to doing, or that are clearly implied.
-      - A list of people mentioned in the note.
-
-      Do not invent details, deadlines, assignees, or people.
-      If no action items are present, return an empty actionItems array.
-      If no people are mentioned, return and empty people array.
-
-      Transcription: \(transcript)
+      Analyze the following voice note transcription. Create a concise title of a few words.
+      Transcription: \(trimmedTitle)
       """
-
-    // 3
-    guard await fitsInContext(prompt) else {
-      throw NoteAnalysisError.transcriptTooLarge
-    }
-
-    // 4
-    let response = try await session.respond(to: prompt, generating: NoteAnalysis.self)
+    let response = try await session.respond(to: prompt)
     return response.content
   }
 }

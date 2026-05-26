@@ -15,6 +15,8 @@
 		A95289EF2FBF7C9C0089E518 /* RecorderPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95289EE2FBF7C9C0089E518 /* RecorderPanel.swift */; };
 		A95289F32FBF7CEB0089E518 /* VoiceNoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95289F22FBF7CEA0089E518 /* VoiceNoteDetailView.swift */; };
 		A95289F62FBF7D160089E518 /* VoiceNoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95289F52FBF7D160089E518 /* VoiceNoteRow.swift */; };
+		A99CD1522FC4A7A800163D6F /* VoiceNoteTagsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99CD1512FC4A7A800163D6F /* VoiceNoteTagsSection.swift */; };
+		A99CD1562FC4A90000163D6F /* VoiceNoteTranscriptSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99CD1552FC4A90000163D6F /* VoiceNoteTranscriptSection.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,12 +30,14 @@
 		A95289EE2FBF7C9C0089E518 /* RecorderPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecorderPanel.swift; sourceTree = "<group>"; };
 		A95289F22FBF7CEA0089E518 /* VoiceNoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteDetailView.swift; sourceTree = "<group>"; };
 		A95289F52FBF7D160089E518 /* VoiceNoteRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteRow.swift; sourceTree = "<group>"; };
+		A99CD1512FC4A7A800163D6F /* VoiceNoteTagsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteTagsSection.swift; sourceTree = "<group>"; };
+		A99CD1552FC4A90000163D6F /* VoiceNoteTranscriptSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteTranscriptSection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A95289E72FBF7BE50089E518 /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
 		A9528A222FBFBB110089E518 /* SampleData */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SampleData; sourceTree = "<group>"; };
-		A98CAA582FC0C84E008A0B32 /* Services */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Services; sourceTree = "<group>"; };
+		A98CAA592FC0C85D008A0B32 /* Services */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Services; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,12 +74,14 @@
 			children = (
 				A9528A222FBFBB110089E518 /* SampleData */,
 				A95289E72FBF7BE50089E518 /* Models */,
-				A98CAA582FC0C84E008A0B32 /* Services */,
+				A98CAA592FC0C85D008A0B32 /* Services */,
 				1839F4AF25190F2A00BB00F1 /* AppMain.swift */,
 				18D775C422AD944300AE281E /* ContentView.swift */,
 				A95289EE2FBF7C9C0089E518 /* RecorderPanel.swift */,
-				A95289F22FBF7CEA0089E518 /* VoiceNoteDetailView.swift */,
 				A95289F52FBF7D160089E518 /* VoiceNoteRow.swift */,
+				A95289F22FBF7CEA0089E518 /* VoiceNoteDetailView.swift */,
+				A99CD1552FC4A90000163D6F /* VoiceNoteTranscriptSection.swift */,
+				A99CD1512FC4A7A800163D6F /* VoiceNoteTagsSection.swift */,
 				18D775C622AD944400AE281E /* Assets.xcassets */,
 				18D775DA22AD963800AE281E /* LaunchScreen.storyboard */,
 				18D775CE22AD944400AE281E /* Info.plist */,
@@ -111,7 +117,7 @@
 			fileSystemSynchronizedGroups = (
 				A95289E72FBF7BE50089E518 /* Models */,
 				A9528A222FBFBB110089E518 /* SampleData */,
-				A98CAA582FC0C84E008A0B32 /* Services */,
+				A98CAA592FC0C85D008A0B32 /* Services */,
 			);
 			name = VoiceNotes;
 			productName = MyRWTutorial;
@@ -192,9 +198,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				18D775C522AD944300AE281E /* ContentView.swift in Sources */,
+				A99CD1522FC4A7A800163D6F /* VoiceNoteTagsSection.swift in Sources */,
 				A95289F62FBF7D160089E518 /* VoiceNoteRow.swift in Sources */,
 				A95289EF2FBF7C9C0089E518 /* RecorderPanel.swift in Sources */,
 				A95289F32FBF7CEB0089E518 /* VoiceNoteDetailView.swift in Sources */,
+				A99CD1562FC4A90000163D6F /* VoiceNoteTranscriptSection.swift in Sources */,
 				1839F4B025190F2A00BB00F1 /* AppMain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -345,7 +353,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.VoiceNotes;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -366,7 +374,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.VoiceNotes;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

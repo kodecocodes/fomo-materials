@@ -103,7 +103,6 @@ private struct TranscriptSummary: View {
   }
 }
 
-
 #Preview {
   VoiceNoteRow(note: VoiceNoteStore.mock.notes[0])
     .environmentObject(VoiceNoteStore.mock)

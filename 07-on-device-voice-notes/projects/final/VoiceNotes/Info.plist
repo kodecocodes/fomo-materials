@@ -22,8 +22,6 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Voice Notes needs microphone access to record your notes.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Voice Notes needs speech recognition access to transcribe recordings.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

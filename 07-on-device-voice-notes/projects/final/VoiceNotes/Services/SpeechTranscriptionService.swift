@@ -65,88 +65,89 @@ struct SpeechTranscriptionService {
     // 3
     return try await transcribeWithSpeechTranscriber(at: url)
   }
-  
-  private func requestSpeechAuthorization() async -> Bool {
-    await withCheckedContinuation { continuation in
-      SFSpeechRecognizer.requestAuthorization { status in
-        continuation.resume(returning: status == .authorized)
-      }
+}
+
+private func requestSpeechAuthorization() async -> Bool {
+  await withCheckedContinuation { continuation in
+    SFSpeechRecognizer.requestAuthorization { status in
+      continuation.resume(returning: status == .authorized)
     }
   }
-  
-  private func transcribeWithSpeechTranscriber(at url: URL) async throws -> String {
-    guard SpeechTranscriber.isAvailable else {
-      throw SpeechTranscriptionError.unavailable
-    }
-    
-    guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: .current) else {
-      throw SpeechTranscriptionError.unsupportedLocale
-    }
-    
-    let transcriber = SpeechTranscriber(locale: locale, preset: .transcription)
-    let modules: [any SpeechModule] = [transcriber]
-    try await prepareAssets(for: modules)
+}
 
-    // 1
-    let audioFile = try AVAudioFile(forReading: url)
-    // 2
-    let resultsTask = Task {
-      // 3
-      var finalText = ""
+private func transcribeWithSpeechTranscriber(at url: URL) async throws -> String {
+  guard SpeechTranscriber.isAvailable else {
+    throw SpeechTranscriptionError.unavailable
+  }
 
-      // 4
-      for try await result in transcriber.results {
-        // 5
-        guard result.isFinal else { continue }
-        // 6
-        let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
-        // 7
-        guard !text.isEmpty else { continue }
-
-        // 8
-        finalText += " " + text
-      }
-
-      // 9
-      return finalText
-    }
-    
-    // 1
-    let analyzer = SpeechAnalyzer(modules: modules)
-    // 2
-    try await analyzer.start(inputAudioFile: audioFile, finishAfterFile: true)
-    // 3
-    let transcript = try await resultsTask.value.trimmingCharacters(in: .whitespacesAndNewlines)
-
-    guard !transcript.isEmpty else {
-      throw SpeechTranscriptionError.emptyResult
-    }
-
-    return transcript
+  guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: .current) else {
+    throw SpeechTranscriptionError.unsupportedLocale
   }
   
-  private func prepareAssets(for modules: [any SpeechModule]) async throws {
-    switch await AssetInventory.status(forModules: modules) {
-    // 1
-    case .installed:
-      return
-    // 2
-    case .downloading:
-      guard let request = try await AssetInventory.assetInstallationRequest(supporting: modules) else {
-        throw SpeechTranscriptionError.unavailable
-      }
-      try await request.downloadAndInstall()
+  let transcriber = SpeechTranscriber(locale: locale, preset: .transcription)
+  let modules: [any SpeechModule] = [transcriber]
+  try await prepareAssets(for: modules)
+  
+  // 1
+  let audioFile = try AVAudioFile(forReading: url)
+  // 2
+  let resultsTask = Task {
     // 3
-    case .supported:
-      guard let request = try await AssetInventory.assetInstallationRequest(supporting: modules) else {
-        throw SpeechTranscriptionError.unavailable
-      }
-      try await request.downloadAndInstall()
+    var finalText = ""
+
     // 4
-    case .unsupported:
-      throw SpeechTranscriptionError.unavailable
-    @unknown default:
+    for try await result in transcriber.results {
+      // 5
+      guard result.isFinal else { continue }
+      // 6
+      let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
+      // 7
+      guard !text.isEmpty else { continue }
+
+      // 8
+      finalText += " " + text
+    }
+
+    // 9
+    return finalText
+  }
+  
+  // 1
+  let analyzer = SpeechAnalyzer(modules: modules)
+  // 2
+  try await analyzer.start(inputAudioFile: audioFile, finishAfterFile: true)
+  // 3
+  let transcript = try await resultsTask.value.trimmingCharacters(in: .whitespacesAndNewlines)
+
+  // 4
+  guard !transcript.isEmpty else {
+    throw SpeechTranscriptionError.emptyResult
+  }
+
+  return transcript
+}
+
+private func prepareAssets(for modules: [any SpeechModule]) async throws {
+  switch await AssetInventory.status(forModules: modules) {
+  // 1
+  case .installed:
+    return
+  // 2
+  case .downloading:
+    guard let request = try await AssetInventory.assetInstallationRequest(supporting: modules) else {
       throw SpeechTranscriptionError.unavailable
     }
+    try await request.downloadAndInstall()
+  case .supported:
+    guard let request = try await AssetInventory.assetInstallationRequest(supporting: modules) else {
+      throw SpeechTranscriptionError.unavailable
+    }
+    try await request.downloadAndInstall()
+  // 3
+  case .unsupported:
+    throw SpeechTranscriptionError.unavailable
+  // 4
+  @unknown default:
+    throw SpeechTranscriptionError.unavailable
   }
 }

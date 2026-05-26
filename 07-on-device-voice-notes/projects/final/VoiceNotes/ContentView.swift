@@ -34,6 +34,25 @@ import SwiftUI
 
 struct ContentView: View {
   @EnvironmentObject private var store: VoiceNoteStore
+  @State private var searchText = ""
+  
+  var visibleNotes: [VoiceNote] {
+    // 1
+    if searchText.isEmpty {
+      return store.notes
+    }
+    
+    // 2
+    return store.notes.filter { note in
+      // 3
+      if let transcript = note.transcript {
+        // 4
+        transcript.localizedStandardContains(searchText)
+      } else {
+        false
+      }
+    }
+  }
 
   var body: some View {
     NavigationStack {
@@ -45,9 +64,9 @@ struct ContentView: View {
             .listRowSeparator(.hidden)
         }
 
-        Section("Notes") {
+        Section(searchText.isEmpty ? "Notes" : "Matching Notes") {
           if store.hasNotes {
-            ForEach(store.notes) { note in
+            ForEach(visibleNotes) { note in
               VoiceNoteRow(note: note)
             }
           } else {
@@ -87,6 +106,7 @@ struct ContentView: View {
       .navigationDestination(for: VoiceNote.ID.self) { noteID in
         VoiceNoteDetailView(noteID: noteID)
       }
+      .searchable(text: $searchText)
     }
   }
 }

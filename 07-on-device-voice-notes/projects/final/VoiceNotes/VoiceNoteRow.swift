@@ -95,14 +95,13 @@ private struct TranscriptSummary: View {
         .lineLimit(2)
         .padding(.top, 4)
     } else {
-      Text("No transcription available.")
+      Text("No transcription available")
         .font(.caption)
         .foregroundStyle(.secondary)
         .padding(.top, 4)
     }
   }
 }
-
 
 #Preview {
   VoiceNoteRow(note: VoiceNoteStore.mock.notes[0])

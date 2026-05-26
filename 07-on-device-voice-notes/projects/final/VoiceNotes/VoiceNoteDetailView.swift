@@ -46,10 +46,6 @@ struct VoiceNoteDetailView: View {
           VStack(alignment: .leading, spacing: 24) {
             VoiceNoteDetailHeader(note: note)
             VoiceNoteTranscriptSection(note: note)
-            VoiceNoteTextSection(text: note.summary, title: "Summary")
-            VoiceNoteTagsSection(tags: note.tags, title: "Tags")
-            VoiceNoteTagsSection(tags: note.people, title: "People")
-            VoiceNoteTasksSection(actionItems: note.actionItems)
           }
           .padding(16)
         }
@@ -57,31 +53,16 @@ struct VoiceNoteDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
           ToolbarItemGroup(placement: .topBarTrailing) {
-            // 1
             if note.transcript == nil {
               Button {
-                // 2
                 Task {
                   await store.transcribeRecording(note)
                 }
               } label: {
-                Image(systemName: "sparkles")
+                Image(systemName: "text.bubble")
                   .accessibilityLabel("Produce Transcript")
               }
-            // 3
-            } else if let transcript = note.transcript {
-              Button {
-                // 4
-                Task {
-                  await store.performAnalysis(
-                    transcript,
-                    for: note.id
-                  )
-                }
-              } label: {
-                Image(systemName: "sparkles.2")
-                  .accessibilityLabel("Perform Analysis")
-              }
+              .disabled(store.transcribingNoteIDs.contains(note.id))
             }
             Button(role: .destructive) {
               isShowingDeleteConfirmation = true
@@ -199,142 +180,6 @@ private struct VoiceNotePlaybackControl: View {
   }
 }
 
-private struct VoiceNoteTranscriptSection: View {
-  @EnvironmentObject private var store: VoiceNoteStore
-  let note: VoiceNote
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Transcript")
-        .font(.headline)
-
-      if store.transcribingNoteIDs.contains(note.id) {
-        Label("Transcribing", systemImage: "waveform.and.magnifyingglass")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      } else if let transcript = note.transcript, !transcript.isEmpty {
-        Text(transcript)
-          .font(.body)
-          .textSelection(.enabled)
-          .fixedSize(horizontal: false, vertical: true)
-      } else {
-        VStack(alignment: .leading, spacing: 12) {
-          Text("No transcript is available for this recording yet.")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-          Button {
-            Task {
-              await store.transcribeRecording(note)
-            }
-          } label: {
-            Label("Transcribe", systemImage: "text.bubble")
-          }
-          .buttonStyle(.borderedProminent)
-        }
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(16)
-    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
-  }
-}
-
-private struct VoiceNoteTextSection: View {
-  let text: String?
-  let title: String
-  
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text(title)
-        .font(.headline)
-      if let text = text {
-        Text(text)
-          .font(.body)
-          .textSelection(.enabled)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(16)
-  }
-}
-
-private struct VoiceNoteTagsSection: View {
-  var tags: [String]
-  var title: String
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text(title)
-        .font(.headline)
-      if !tags.isEmpty {
-        FlowLayout(spacing: 8) {
-          ForEach(tags, id: \.self) { tag in
-            Text(tag)
-              .font(.subheadline.weight(.medium))
-              .foregroundStyle(.secondary)
-              .padding(.horizontal, 12)
-              .padding(.vertical, 6)
-              .background(Color(.systemGray6), in: Capsule())
-          }
-        }
-      }
-    }
-  }
-}
-
-private struct VoiceNoteTasksSection: View {
-  var actionItems: [NoteActionItem]
-  
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Action Items")
-        .font(.headline)
-      VStack(spacing: 8) {
-        if !actionItems.isEmpty {
-          ForEach(actionItems) { task in
-            ActionItemRow(task: task)
-          }
-        }
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(16)
-  }
-}
-
-private struct ActionItemRow: View {
-  let task: NoteActionItem
-  
-  var body: some View {
-    HStack(alignment: .center, spacing: 12) {
-      Image(systemName: "circle")
-        .font(.body)
-        .foregroundStyle(.secondary)
-        .frame(width: 20, height: 20)
-        .padding(.top, 1)
-      
-      VStack(alignment: .leading, spacing: 4) {
-        Text(task.task)
-          .font(.body)
-          .textSelection(.enabled)
-          .fixedSize(horizontal: false, vertical: true)
-        
-        if !task.person.isEmpty {
-          ForEach(task.person, id: \.self) { person in
-            Label(person, systemImage: "person")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(12)
-      .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
-    }
-  }
-}
-
 private extension VoiceNote {
   var hasTranscript: Bool {
     transcript?.isEmpty == false
@@ -418,11 +263,19 @@ private struct FlowLayout: Layout {
   }
 }
 
-
-#Preview {
+#Preview("With Transcript") {
   NavigationView {
     VoiceNoteDetailView(
       noteID: VoiceNoteStore.mock.notes[0].id
+    )
+    .environmentObject(VoiceNoteStore.mock)
+  }
+}
+
+#Preview("No Transcript") {
+  NavigationView {
+    VoiceNoteDetailView(
+      noteID: VoiceNoteStore.mock.notes[2].id
     )
     .environmentObject(VoiceNoteStore.mock)
   }

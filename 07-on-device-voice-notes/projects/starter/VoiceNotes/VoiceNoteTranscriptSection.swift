@@ -30,49 +30,40 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
-import FoundationModels
+import SwiftUI
 
-@Generable(description: "A concise analysis of a transcribed voice note.")
-struct NoteAnalysis {
-  @Guide(description: "A concise title of a few words that summarizes the note contents.")
-  let title: String
+struct VoiceNoteTranscriptSection: View {
+  @EnvironmentObject private var store: VoiceNoteStore
+  let note: VoiceNote
 
-  @Guide(description: "A two to three sentence summary of the voice note.")
-  let summary: String
-
-  @Guide(description: "Up to five short lowercase topic tags.", .count(1...5))
-  let tags: [String]
-
-  @Guide(description: "People referenced in the note..")
-  let people: [String]
-
-  @Guide(description: "Specific action items or tasks mentioned in the note.")
-  let actionItems: [NoteActionItem]
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Transcript")
+        .font(.headline)
+      if store.transcribingNoteIDs.contains(note.id) {
+        Label("Transcribing", systemImage: "waveform.and.magnifyingglass")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      } else if let transcript = note.transcript, !transcript.isEmpty {
+        Text(transcript)
+          .font(.body)
+          .textSelection(.enabled)
+          .fixedSize(horizontal: false, vertical: true)
+      } else {
+        VStack(alignment: .leading, spacing: 12) {
+          Text("No transcript is available for this recording yet.")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(16)
+    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
+  }
 }
 
-@Generable(description: "An actionable item or task extracted from the voice note.")
-struct NoteActionItem: Identifiable, Codable, Equatable {
-  let id = UUID()
-  @Guide(description: "The task or action to be completed.")
-  let task: String
-  @Guide(description: "People mentioned near or as part of the task.")
-  let person: [String]
-  
-  private enum CodingKeys: String, CodingKey {
-    case task
-    case person
-  }
-
-  init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    task = try container.decode(String.self, forKey: .task)
-    person = try container.decode(Array<String>.self, forKey: .person)
-  }
-
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(task, forKey: .task)
-    try container.encode(person, forKey: .person)
-  }
+#Preview {
+  VoiceNoteTranscriptSection(note: VoiceNoteStore.mock.notes[0])
+    .environmentObject(VoiceNoteStore.mock)
 }

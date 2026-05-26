@@ -30,60 +30,48 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
+import SwiftUI
 
-struct VoiceNote: Identifiable, Codable, Equatable {
-  let id: UUID
-  var title: String
-  let createdAt: Date
-  var duration: TimeInterval
-  let filename: String
-  var transcript: String?
+struct VoiceNoteTranscriptSection: View {
+  @EnvironmentObject private var store: VoiceNoteStore
+  let note: VoiceNote
 
-  init(
-    id: UUID = UUID(),
-    title: String,
-    createdAt: Date = .now,
-    duration: TimeInterval,
-    filename: String,
-    transcript: String? = nil
-  ) {
-    self.id = id
-    self.title = title
-    self.createdAt = createdAt
-    self.duration = duration
-    self.filename = filename
-    self.transcript = transcript
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Transcript")
+        .font(.headline)
+      if store.transcribingNoteIDs.contains(note.id) {
+        Label("Transcribing", systemImage: "waveform.and.magnifyingglass")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      } else if let transcript = note.transcript, !transcript.isEmpty {
+        Text(transcript)
+          .font(.body)
+          .textSelection(.enabled)
+          .fixedSize(horizontal: false, vertical: true)
+      } else {
+        VStack(alignment: .leading, spacing: 12) {
+          Text("No transcript is available for this recording yet.")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+          Button {
+            Task {
+              await store.transcribeRecording(note)
+            }
+          } label: {
+            Label("Transcribe", systemImage: "text.bubble")
+          }
+          .buttonStyle(.borderedProminent)
+        }
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(16)
+    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
   }
 }
 
-#if DEBUG
-extension VoiceNote {
-    static let mock = VoiceNote(
-        title: "Weekly planning",
-        createdAt: .now,
-        duration: 183,
-        filename: "mock.m4a"
-    )
-
-    static let mockWithTranscript = VoiceNote(
-        title: "Project ideas",
-        createdAt: .now,
-        duration: 94,
-        filename: "mock2.m4a",
-        transcript: """
-          Had the call with Marcus and the design team this morning. We need to get the revised mockups over to the client by Thursday. Marcus is going to handle the export, I need to write up the meeting notes and send them to Sarah. Overall I think the direction is good but the color palette still needs work.
-          """
-    )
-
-    static let mockWithAnalysis = VoiceNote(
-        title: "Launch checklist",
-        createdAt: .now,
-        duration: 126,
-        filename: "mock3.m4a",
-        transcript: """
-          Before the beta goes out, I need to ask Maya to review the onboarding copy, follow up with Jordan about the icon export, and make sure the settings screen includes the new privacy explanation. The biggest thing is keeping the first-run experience short and clear.
-          """
-    )
+#Preview {
+  VoiceNoteTranscriptSection(note: VoiceNoteStore.mock.notes[0])
+    .environmentObject(VoiceNoteStore.mock)
 }
-#endif

@@ -169,38 +169,6 @@ private struct VoiceNotePlaybackControl: View {
   }
 }
 
-private struct VoiceNoteTranscriptSection: View {
-  @EnvironmentObject private var store: VoiceNoteStore
-  let note: VoiceNote
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Transcript")
-        .font(.headline)
-
-      if store.transcribingNoteIDs.contains(note.id) {
-        Label("Transcribing", systemImage: "waveform.and.magnifyingglass")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      } else if let transcript = note.transcript, !transcript.isEmpty {
-        Text(transcript)
-          .font(.body)
-          .textSelection(.enabled)
-          .fixedSize(horizontal: false, vertical: true)
-      } else {
-        VStack(alignment: .leading, spacing: 12) {
-          Text("No transcript is available for this recording yet.")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(16)
-    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
-  }
-}
-
 private extension VoiceNote {
   var hasTranscript: Bool {
     transcript?.isEmpty == false
@@ -284,11 +252,19 @@ private struct FlowLayout: Layout {
   }
 }
 
-
-#Preview {
+#Preview("With Transcript") {
   NavigationView {
     VoiceNoteDetailView(
       noteID: VoiceNoteStore.mock.notes[0].id
+    )
+    .environmentObject(VoiceNoteStore.mock)
+  }
+}
+
+#Preview("No Transcript") {
+  NavigationView {
+    VoiceNoteDetailView(
+      noteID: VoiceNoteStore.mock.notes[2].id
     )
     .environmentObject(VoiceNoteStore.mock)
   }

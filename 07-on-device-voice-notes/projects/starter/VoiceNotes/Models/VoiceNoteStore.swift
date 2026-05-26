@@ -48,8 +48,6 @@ final class VoiceNoteStore: ObservableObject {
   private let repository = VoiceNoteRepository()
   private let recorder = VoiceNoteRecorder()
   private let player = VoiceNotePlayer()
-  // private let transcriptionService = SpeechTranscriptionService()
-  // private let analysisService = NoteAnalysisService()
 
   private var recordingTimer: Timer?
   private var playbackTimer: Timer?
